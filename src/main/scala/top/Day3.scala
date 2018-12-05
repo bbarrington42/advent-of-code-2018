@@ -38,14 +38,14 @@ object Day3 {
 
   // Calculate the Rect representing the overlap of two Claims, if any.
   private def overlap(l: Claim, r: Claim): Option[Rect] =
-    if (isOverlap(l, r))
+    if (isOverlapping(l, r))
       Option(Rect(Point(max(l.x, r.x), max(l.y, r.y)),
         Point(min(l.x + l.width - 1, r.x + r.width - 1), min(l.y + l.height - 1, r.y + r.height - 1))))
     else None
 
 
   // Determines if 2 Claims overlap
-  private def isOverlap(l: Claim, r: Claim): Boolean =
+  private def isOverlapping(l: Claim, r: Claim): Boolean =
     l.x < r.x + r.width && l.y < r.y + r.height && r.x < l.x + l.width && r.y < l.y + l.height
 
   // For debugging
@@ -67,15 +67,19 @@ object Day3 {
     Point(cx.x + cx.width, cy.y + cy.height)
   }
 
-  
 
-  def solve(claims: List[Claim]): Int = {
-    def loop(_claims: List[Claim], fabric: Fabric): Int = _claims match {
-      case Nil => fabric.foldLeft(0)((z, a) => z + a.sum)
+  def solve(claims: List[Claim]): (Int, List[Int]) = {
+    def loop(_claims: List[Claim], fabric: Fabric, ids: Set[Int]): (Int, List[Int]) = _claims match {
+      case Nil =>
+        val f = fabric.foldLeft(0)((z, a) => z + a.sum)
+        val is = claims.map(_.id).diff(ids.toSeq)
+        (f, is)
 
       case head :: tail =>
-        val f = tail.foldLeft(fabric)((f, c) => overlap(head, c).fold(f)(r => update(f, r)))
-        loop(tail, f)
+        val (f, is) = tail.foldLeft((fabric, ids)) { case ((f, i), c) =>
+          overlap(head, c).fold((f, i))(r => (update(f, r), i + head.id + c.id))
+        }
+        loop(tail, f, is)
     }
 
     // Get dimensions of Fabric
@@ -83,7 +87,8 @@ object Day3 {
 
     val fabric = Array.ofDim[Int](point.x, point.y)
 
-    loop(claims, fabric)
+    // Collect overlapping IDs
+    loop(claims, fabric, Set.empty[Int])
   }
 
 }

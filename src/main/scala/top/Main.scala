@@ -10,7 +10,8 @@ object Main {
   val data = List(
     "#1 @ 1,3: 4x4",
     "#2 @ 3,1: 4x4",
-    "#3 @ 5,5: 2x2"
+    "#3 @ 5,5: 2x2",
+    "#4 @ 1,6: 2x2"
   )
 
   def main(args: Array[String]): Unit = {
