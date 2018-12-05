@@ -31,6 +31,7 @@ object Day3 {
       x <- rect.topLeft.x to rect.bottomRight.x
       y <- rect.topLeft.y to rect.bottomRight.y
     } yield Point(x, y)
+
     points.foreach(p => fabric(p.x)(p.y) = 1)
     fabric
   }
@@ -47,7 +48,7 @@ object Day3 {
   private def isOverlap(l: Claim, r: Claim): Boolean =
     l.x < r.x + r.width && l.y < r.y + r.height && r.x < l.x + l.width && r.y < l.y + l.height
 
-
+  // For debugging
   def toString(fabric: Fabric): String =
     fabric.map(arr => arr.mkString(" ")).mkString("\n")
 
@@ -55,25 +56,34 @@ object Day3 {
   def parse(lines: List[String]): List[Claim] =
     lines.map(Claim(_))
 
-  // Parse the input file. Return an ordered list of Claims
-  def parse(data: File): List[Claim] = {
-    val lines = Source.fromFile(data).getLines().toList
-    parse(lines)
-  }
+  // Parse the input file. Return a list of Claims.
+  def parse(data: File): List[Claim] =
+    parse(Source.fromFile(data).getLines().toList)
 
   // Find the largest x & y in the given Claims
-  def extent(claims: List[Claim]): Point = {
+  private def extent(claims: List[Claim]): Point = {
     val cx = claims.sortBy(c => c.x + c.width).reverse.head
     val cy = claims.sortBy(c => c.y + c.height).reverse.head
     Point(cx.x + cx.width, cy.y + cy.height)
   }
 
-  def solve(claims: List[Claim], fabric: Fabric): Int = claims match {
-    case Nil => fabric.foldLeft(0)((z, a) => z + a.sum)
+  
 
-    case head :: tail =>
-      val f = tail.foldLeft(fabric)((f, c) => overlap(head, c).fold(f)(r => update(f, r)))
-      solve(tail, f)
+  def solve(claims: List[Claim]): Int = {
+    def loop(_claims: List[Claim], fabric: Fabric): Int = _claims match {
+      case Nil => fabric.foldLeft(0)((z, a) => z + a.sum)
+
+      case head :: tail =>
+        val f = tail.foldLeft(fabric)((f, c) => overlap(head, c).fold(f)(r => update(f, r)))
+        loop(tail, f)
+    }
+
+    // Get dimensions of Fabric
+    val point = extent(claims)
+
+    val fabric = Array.ofDim[Int](point.x, point.y)
+
+    loop(claims, fabric)
   }
 
 }

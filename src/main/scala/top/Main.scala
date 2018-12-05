@@ -17,12 +17,7 @@ object Main {
 
     val claims = parse(new File("data/input.txt"))
 
-    // Get dimensions of Fabric
-    val point = extent(claims)
-
-    val fabric = Array.ofDim[Int](point.x, point.y)
-
-    val answer = solve(claims, fabric)
+    val answer = solve(claims)
 
     println(answer)
   }
