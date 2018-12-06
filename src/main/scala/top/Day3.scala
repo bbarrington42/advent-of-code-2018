@@ -91,4 +91,12 @@ object Day3 {
     loop(claims, fabric, Set.empty[Int])
   }
 
+  def main(args: Array[String]): Unit = {
+
+    val claims = parse(new File("data/day3.txt"))
+
+    val answer = solve(claims)
+
+    println(answer)
+  }
 }
