@@ -51,17 +51,13 @@ object Day4 {
 
       val (guardId, instances) = processGuardShift(head :: shift)
 
-      println(s"guardId: $guardId, sleepIntervals: $instances")
-
-      val map = instances.foldLeft(history(guardId))((m, t)=>{
+      val map = instances.foldLeft(history(guardId))((m, t) => {
         val (minute, date) = t
         val l = date :: m(minute)
         m.updated(minute, l)
       })
 
       val updated = history.updated(guardId, map)
-
-      println(s"updated: $updated")
 
       processEvents(rest, updated)
   }
@@ -80,18 +76,18 @@ object Day4 {
 
   // Processes a list of alternating FallAsleep & WakeUp events
   def sleepIntervals(events: List[Event], date: Date): Seq[(Int, Date)] = events match {
-      case Nil => Nil
+    case Nil => Nil
 
-      case head :: tail => head match {
-        case FallAsleep(from) => tail.head match {
-          case WakeUp(until) => (from until until).map(_ -> date) ++ sleepIntervals(tail.tail, date)
+    case head :: tail => head match {
+      case FallAsleep(from) => tail.head match {
+        case WakeUp(until) => (from until until).map(_ -> date) ++ sleepIntervals(tail.tail, date)
 
-          case _ => sys.exit(3)
-        }
-
-        case _ => sys.exit(4)
+        case _ => sys.exit(3)
       }
+
+      case _ => sys.exit(4)
     }
+  }
 
   // Convert one line of input to a GuardLogEntry
   def convert(line: String): GuardLogEntry = line match {
@@ -113,14 +109,26 @@ object Day4 {
   def parse(lines: List[String]): List[Event] =
     lines.map(convert).sortBy(e => (e.date.month, e.date.day, e.time.hour, e.time.minute)).map(_.event)
 
-  def solve(history: GuardHistory): Int = {
+  def solve2(history: GuardHistory): Int = {
+    // Find the minute & occurrences during which the guard was asleep the most
+    def max(map: Map[Int, List[Date]]): (Int, Int) =
+      map.toList.map { case (min, dates) => min -> dates.length }.sortBy { case (_, mins) => mins }.reverse.headOption.getOrElse(0 -> 0)
+
+    // Order the guards by max minute
+    val (guardId, (minute, value)) =
+      history.toList.map { case (id, map) => id -> max(map) }.sortBy { case (_, (_, v)) => v }.reverse.head
+
+    println(s"guardId: $guardId, minute: $minute, value: $value")
+
+    guardId * minute
+  }
+
+  def solve1(history: GuardHistory): Int = {
     def total(map: Map[Int, List[Date]]): Int =
       map.toList.map { case (_, dates) => dates.length }.sum
 
     def max(map: Map[Int, List[Date]]): Int =
       map.toList.map { case (minute, dates) => minute -> dates.length }.sortBy { case (_, mins) => mins }.reverse.head._1
-
-    println(s"history: $history")
 
     val guardId =
       history.toList.map { case (guardId, napMap) => guardId -> total(napMap) }.sortBy { case (_, mins) => mins }.reverse.head._1
@@ -151,7 +159,7 @@ object Day4 {
 
     val history = processEvents(events, guardHistory)
 
-    println(solve(history))
+    println(solve2(history))
   }
 
 }
