@@ -49,16 +49,17 @@ object Day4 {
         case _ => true
       })
 
-      val (guardId, sleepIntervals) = processGuardShift(head :: shift)
+      val (guardId, instances) = processGuardShift(head :: shift)
 
-      println(s"guardId: $guardId, sleepIntervals: $sleepIntervals")
+      println(s"guardId: $guardId, sleepIntervals: $instances")
 
-      val updated = sleepIntervals.foldLeft(history)((h, intervals) => {
-        h.updated(guardId, intervals.foldLeft(history(guardId))((shift, t) => {
-          val (minute, date) = t
-          shift.updated(minute, date :: shift(minute))
-        }))
+      val map = instances.foldLeft(history(guardId))((m, t)=>{
+        val (minute, date) = t
+        val l = date :: m(minute)
+        m.updated(minute, l)
       })
+
+      val updated = history.updated(guardId, map)
 
       println(s"updated: $updated")
 
@@ -67,7 +68,7 @@ object Day4 {
 
   // Process one guard shift. The list of Events passed represents one guard shift beginning with a ShiftStart event.
   // The returned tuples represent the sequences of minutes during which the guard was asleep
-  def processGuardShift(events: List[Event]): (Int, List[Seq[(Int, Date)]]) = events match {
+  def processGuardShift(events: List[Event]): (Int, Seq[(Int, Date)]) = events match {
     case head :: tail => head match {
       case ShiftStart(guardId, date) => guardId -> sleepIntervals(tail, date)
 
@@ -78,12 +79,12 @@ object Day4 {
   }
 
   // Processes a list of alternating FallAsleep & WakeUp events
-  def sleepIntervals(events: List[Event], date: Date): List[Seq[(Int, Date)]] = events match {
+  def sleepIntervals(events: List[Event], date: Date): Seq[(Int, Date)] = events match {
       case Nil => Nil
 
       case head :: tail => head match {
         case FallAsleep(from) => tail.head match {
-          case WakeUp(until) => (from until until).map(_ -> date) :: sleepIntervals(tail.tail, date)
+          case WakeUp(until) => (from until until).map(_ -> date) ++ sleepIntervals(tail.tail, date)
 
           case _ => sys.exit(3)
         }
@@ -145,8 +146,8 @@ object Day4 {
   )
 
   def main(args: Array[String]): Unit = {
-    val events = parse(data)
-      //parse(new File("data/day4.txt"))
+    val events = //parse(data)
+      parse(new File("data/day4.txt"))
 
     val history = processEvents(events, guardHistory)
 
