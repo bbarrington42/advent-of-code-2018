@@ -2,7 +2,6 @@
 *.log
 *.gz
 assets/*
-data/*
 *.csv
 
 # intellij specific
