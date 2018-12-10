@@ -16,16 +16,26 @@ object Day7 {
   }
 
   // Assemble Map of prerequisites
+  def unique(tuples: List[(Char, Char)]): List[Char] =
+    tuples.foldLeft(Set.empty[Char])((z, t)=> z + t._1 + t._2).toList
+
+
   def parse(lines: List[String]): Map[Char, List[Char]] = {
-    lines.foldLeft(Map.empty[Char, List[Char]].withDefaultValue(Nil))((z, line) => {
-      val (preReq, state) = parse(line)
-      z.updated(state, preReq :: z(state))
-    })
+    val tuples = lines.map(parse)
+    // Build the initial map. All states with no prerequisites.
+    val m = unique(tuples).foldLeft(Map.empty[Char, List[Char]])((z, c)=> z.updated(c, Nil))
+    tuples.foldLeft(m)((z, t)=> z.updated(t._2, t._1 :: z(t._2)))
   }
 
   def remove[A](a: A, ls: List[A]): List[A] = {
-    val (front, back) = ls.span(_ != a)
-    front ++ back.tail
+    val n = ls.indexOf(a)
+    if (n == -1) ls else {
+      val (front, back) = ls.splitAt(n)
+      back match {
+        case Nil => front
+        case _ :: tail => front ++ tail
+      }
+    }
   }
 
   def parse(file: File): Map[Char, List[Char]] =
@@ -33,7 +43,7 @@ object Day7 {
 
   // Determine the initial states. An initial state must not have any prerequisites.
   def init(map: Map[Char, List[Char]]): List[Char] =
-    map.filter { case (state, preReqs) => preReqs.isEmpty }.toList.map { case (state, _) => state }.sorted
+    map.filter { case (_, preReqs) => preReqs.isEmpty }.toList.map { case (state, _) => state }.sorted
 
   def solve1(lines: List[String]): String = {
     def loop(preReqs: Map[Char, List[Char]], states: List[Char]): List[Char] = states match {
@@ -41,11 +51,14 @@ object Day7 {
 
       case _ =>
         val (front, back) = states.span(ch => preReqs(ch).nonEmpty)
+        println(s"front: $front, back: $back")
         val updated = preReqs.map { case (ch, ls) => ch -> remove(back.head, ls) }
         back.head :: loop(updated, (front ++ back.tail).sorted)
     }
 
     val prs = parse(lines)
+    println(s"prs: $prs")
+
     loop(prs, init(prs)).mkString
   }
 
