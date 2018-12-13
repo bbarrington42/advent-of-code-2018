@@ -6,6 +6,8 @@ import scala.io.Source
 
 object Day7 {
 
+  type Prerequites = Map[Char, List[Char]]
+
   val inputRegex = """Step ([A-Z]) must be finished before step ([A-Z]) can begin\.""".r
 
 
@@ -16,7 +18,7 @@ object Day7 {
   }
 
   // Assemble Map of prerequisites
-  def parse(lines: List[String]): Map[Char, List[Char]] = {
+  def parse(lines: List[String]): Prerequites = {
     def unique(tuples: List[(Char, Char)]): List[Char] =
       tuples.foldLeft(Set.empty[Char])((z, t) => z + t._1 + t._2).toList
 
@@ -37,36 +39,78 @@ object Day7 {
   def parse(file: File): List[String] =
     Source.fromFile(file).getLines().toList
 
-  def extractExecutable(reqs: Map[Char, List[Char]]): (List[Char], Map[Char, List[Char]]) = {
+  def extractExecutable(reqs: Prerequites): (List[Char], Prerequites) = {
     val (f, b) = reqs.partition { case (_, l) => l.isEmpty }
-    f.keys.toList -> b
+    f.keys.toList.sorted -> b
   }
 
-  // Removes the prerequisite from the Map and returns a tuple of new states that are executable and the updated Map
-  def execute(reqs: Map[Char, List[Char]], state: Char): (List[Char], Map[Char, List[Char]]) = {
+  // Removes the prerequisite from the Map and returns a tuple of new states that are executable along with the updated Map
+  def execute(reqs: Prerequites, state: Char): (List[Char], Prerequites) = {
     val m = reqs.map { case (k, l) => k -> remove(state, l) }
     extractExecutable(m)
   }
 
   def solve1(lines: List[String]): String = {
-    def loop(execution: List[Char], preReqs: Map[Char, List[Char]]): List[Char] = {
-      println(s"execution: $execution, reqs: $preReqs")
-      execution match {
-        case Nil => Nil
+    def loop(execution: List[Char], preReqs: Prerequites): List[Char] = execution match {
+      case Nil => Nil
 
-        case head :: tail =>
-          val (ex, m) = execute(preReqs, head)
-          head :: loop((ex ++ tail).sorted, m)
-      }
+      case head :: tail =>
+        val (ex, m) = execute(preReqs, head)
+        head :: loop((ex ++ tail).sorted, m)
     }
+
 
     val preReqs = parse(lines)
 
     val (init, map) = extractExecutable(preReqs)
 
-    loop(init.sorted, map).mkString
+    loop(init, map).mkString
   }
 
+
+  //// Specific to Part 2 /////////////
+  case class Elf(task: Option[Char] = None, timeRemaining: Int = 0) {
+    def isAvail(): Boolean = timeRemaining == 0
+  }
+
+  def execute(reqs: Prerequites, elves: List[Elf], execution: List[Char]): (List[Char], Prerequites) = {
+    elves.foldLeft(execution -> reqs)((z, elf) =>
+      elf.task.fold(execution -> reqs)(task => {
+        val (states, newReqs) = execute(reqs, task)
+        (remove(task, z._1) ++ states).sorted -> newReqs
+      })
+    )
+  }
+
+  val TIME_CONST = 60
+
+  def taskTime(task: Char): Int = task - 'A' + TIME_CONST + 1
+
+  def solve2(lines: List[String]): Int = {
+    def loop(execution: List[Char], prerequites: Prerequites, elves: List[Elf], elapsed: Int): Int = execution match {
+      case Nil => elapsed
+
+      case _ =>
+        // Look for free Elves
+        val (free, occupied) = elves.partition(_.isAvail())
+        //println(s"free: $free, occupied: $occupied")
+        // Execute any completed tasks
+        val (tasks, reqs) = execute(prerequites, free, execution)
+        //println(s"tasks: $tasks, reqs: $reqs")
+        // Assign tasks to the free elves
+        // todo Handle case where there are more free Elves than tasks
+        val assigned = free.zip(tasks).map { case (_, task) => Elf(Option(task), taskTime(task)) }
+        //println(s"assigned: $assigned")
+        // Adjust times
+        loop(tasks, reqs, free ++ (assigned ++ occupied).map(elf => elf.copy(timeRemaining = elf.timeRemaining - 1)), elapsed + 1)
+    }
+
+    val reqs = parse(lines)
+
+    val (init, map) = extractExecutable(reqs)
+
+    loop(init, map, List.fill(4)(Elf()), 0)
+  }
 
   val data = List(
     "Step C must be finished before step A can begin.",
@@ -85,5 +129,9 @@ object Day7 {
     val r1 = solve1(parse(file))
 
     println(s"part1: $r1")
+
+    val r2 = solve2(parse(file))
+
+    println(s"part2: $r2")
   }
 }
