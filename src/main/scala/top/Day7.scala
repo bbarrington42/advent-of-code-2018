@@ -70,63 +70,54 @@ object Day7 {
 
   //// Specific to Part 2 /////////////
 
-  /* Here is the new approach
-  1 - bookkeeping for completed tasks - previously developed 'execute' method can be used
-  2 - if the elves are all idle and the task list is empty, we're done
-  2 - take the elves that just completed their task and assign new tasks to them - this should remove the tasks from the pending list
-  3 - loop
-  */
-
-
-  case class Elf(task: Option[Char] = None, timeRemaining: Int = 0) {
-    def isAvail(): Boolean = timeRemaining <= 0
+  def execute(reqs: Prerequisites, tasks: List[Char], pending: List[Char]): (List[Char], Prerequisites) = {
+    println(s"before execute - tasks: $tasks, reqs: $reqs")
+    tasks.foldLeft((pending, reqs))((z, t) => {
+      val (newTasks, newReqs) = execute(z._2, t)
+      ((newTasks ++ z._1).sorted, newReqs)
+    })
   }
 
-  def execute(reqs: Prerequisites, elves: List[Elf], pending: List[Char]): (List[Char], Prerequisites) = {
-    elves.filter(_.isAvail()).foldLeft(pending -> reqs)((z, elf) =>
-      elf.task.fold(pending -> reqs)(task => {
-        val (states, newReqs) = execute(reqs, task)
-        (remove(task, z._1) ++ states).sorted -> newReqs
-      })
-    )
+  def assignTasks(pending: List[Char], elves: List[Elf]): (List[Char], List[Elf]) = {
+    val (avail, busy) = elves.partition(_.isAvail())
+    val count = Math.min(pending.length, avail.length)
+
+    def loop(n: Int, tasks: List[Char], assigned: List[Elf]): (List[Char], List[Elf]) =
+      if (n == 0) (tasks, assigned ++ List.fill(avail.length - count)(Elf())) else
+        loop(n - 1, tasks.tail, Elf(Some(tasks.head), taskTime(tasks.head)) :: assigned)
+
+    val (t, e) = loop(count, pending, Nil)
+
+    (t, e ++ busy)
   }
 
-  // Assign tasks to the available elves, returns any remaining tasks and the elves
-  def assignTasks(pending: List[Char], avail: Int): (List[Char], List[Elf]) = {
-    def loop(count: Int, remaining: List[Char], assigned: List[Elf]): (List[Char], List[Elf]) =
-      if (count == 0) (remaining, assigned) else
-        loop(count - 1, remaining.tail,
-          Elf(Some(remaining.head), taskTime(remaining.head)) :: assigned)
-
-
-    val (tasks, elves) = loop(Math.min(avail, pending.length), pending, Nil)
-    val n = avail - elves.length
-    val idle = if (n > 0) List.fill(n)(Elf()) else Nil
-    (tasks, elves ++ idle)
+  def decrementTime(elves: List[Elf]): List[Elf] = {
+    val (idle, busy) = elves.partition(_.isAvail())
+    idle ++ busy.map(elf => elf.copy(timeRemaining = elf.timeRemaining -1 ))
   }
-
-  val NUM_ELVES = 4
-  val TIME_CONST = 60
-
-  def taskTime(task: Char): Int = task - 'A' + TIME_CONST + 1
 
   def solve2(lines: List[String]): Int = {
-    def loop(pending: List[Char], prerequites: Prerequisites, elves: List[Elf], elapsed: Int): Int = {
+    def loop2(pendingTasks: List[Char], reqs: Prerequisites, elves: List[Elf], elapsed: Int): Int = {
 
-      println(s"pending: $pending, elves: $elves, prerequisites: $prerequites")
-      // Execute any completed tasks. The returned tasks are those available for assignment.
-      val (tasks, reqs) = execute(prerequites, elves, pending)
+      println(s"pendingTasks: $pendingTasks, elves: $elves, reqs: $reqs")
 
-      if (tasks.isEmpty && elves.forall(_.isAvail())) elapsed else {
-        //println(s"tasks: $tasks, reqs: $reqs")
-        // Assign tasks to the free elves
-        val (done, occupied) = elves.partition(_.isAvail())
+      // Are we done?
+      if(pendingTasks.isEmpty && reqs.isEmpty && elves.forall(_.isAvail())) elapsed else {
 
-        val (remaining, curr) = assignTasks(tasks, done.length)
+        val completedTasks = elves.filter(elf => elf.isAvail() && elf.task.isDefined).map(_.task.get)
 
-        //println(s"remaining: $remaining, curr: $curr")
-        // Adjust times
-        loop(remaining, reqs, (curr ++ occupied).map(elf => elf.copy(timeRemaining = elf.timeRemaining - 1)), elapsed + 1)
+        println(s"completedTasks: $completedTasks")
+
+        val (newTasks, newReqs) = execute(reqs, completedTasks, pendingTasks)
+
+        println(s"after execute - newTasks: $newTasks, newReqs: $newReqs")
+
+        val (t, e) = assignTasks(newTasks, elves)
+        assert(e.length == NUM_ELVES)
+
+        //if(elapsed == 200) sys.exit(42)
+
+        loop2(t, newReqs, decrementTime(e), elapsed + 1)
       }
     }
 
@@ -134,8 +125,22 @@ object Day7 {
 
     val (init, map) = extractExecutable(reqs)
 
-    loop(init, map, List.fill(NUM_ELVES)(Elf()), 0)
+    val (t, e) = assignTasks(init, List.fill(NUM_ELVES)(Elf()))
+
+    loop2(t, map, e, 0)
   }
+
+
+  case class Elf(task: Option[Char] = None, timeRemaining: Int = 0) {
+    def isAvail(): Boolean = timeRemaining <= 0
+  }
+
+
+  val NUM_ELVES = 4
+  val TIME_CONST = 60
+
+  def taskTime(task: Char): Int = task - 'A' + TIME_CONST + 1
+
 
   val data = List(
     "Step C must be finished before step A can begin.",
