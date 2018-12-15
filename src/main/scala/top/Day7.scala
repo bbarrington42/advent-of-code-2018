@@ -70,8 +70,17 @@ object Day7 {
 
   //// Specific to Part 2 /////////////
 
+  case class Elf(task: Option[Char] = None, timeRemaining: Int = 0) {
+    def isAvail(): Boolean = timeRemaining <= 0
+  }
+
+
+  val NUM_ELVES = 4
+  val TIME_CONST = 60
+
+  def taskTime(task: Char): Int = task - 'A' + TIME_CONST + 1
+
   def execute(reqs: Prerequisites, tasks: List[Char], pending: List[Char]): (List[Char], Prerequisites) = {
-    println(s"before execute - tasks: $tasks, reqs: $reqs")
     tasks.foldLeft((pending, reqs))((z, t) => {
       val (newTasks, newReqs) = execute(z._2, t)
       ((newTasks ++ z._1).sorted, newReqs)
@@ -93,31 +102,22 @@ object Day7 {
 
   def decrementTime(elves: List[Elf]): List[Elf] = {
     val (idle, busy) = elves.partition(_.isAvail())
-    idle ++ busy.map(elf => elf.copy(timeRemaining = elf.timeRemaining -1 ))
+    idle ++ busy.map(elf => elf.copy(timeRemaining = elf.timeRemaining - 1))
   }
 
   def solve2(lines: List[String]): Int = {
-    def loop2(pendingTasks: List[Char], reqs: Prerequisites, elves: List[Elf], elapsed: Int): Int = {
-
-      println(s"pendingTasks: $pendingTasks, elves: $elves, reqs: $reqs")
+    def loop(pendingTasks: List[Char], reqs: Prerequisites, elves: List[Elf], elapsed: Int): Int = {
 
       // Are we done?
-      if(pendingTasks.isEmpty && reqs.isEmpty && elves.forall(_.isAvail())) elapsed else {
+      if (pendingTasks.isEmpty && reqs.isEmpty && elves.forall(_.isAvail())) elapsed else {
 
         val completedTasks = elves.filter(elf => elf.isAvail() && elf.task.isDefined).map(_.task.get)
 
-        println(s"completedTasks: $completedTasks")
-
         val (newTasks, newReqs) = execute(reqs, completedTasks, pendingTasks)
 
-        println(s"after execute - newTasks: $newTasks, newReqs: $newReqs")
-
         val (t, e) = assignTasks(newTasks, elves)
-        assert(e.length == NUM_ELVES)
 
-        //if(elapsed == 200) sys.exit(42)
-
-        loop2(t, newReqs, decrementTime(e), elapsed + 1)
+        loop(t, newReqs, decrementTime(e), elapsed + 1)
       }
     }
 
@@ -127,19 +127,8 @@ object Day7 {
 
     val (t, e) = assignTasks(init, List.fill(NUM_ELVES)(Elf()))
 
-    loop2(t, map, e, 0)
+    loop(t, map, e, 0)
   }
-
-
-  case class Elf(task: Option[Char] = None, timeRemaining: Int = 0) {
-    def isAvail(): Boolean = timeRemaining <= 0
-  }
-
-
-  val NUM_ELVES = 4
-  val TIME_CONST = 60
-
-  def taskTime(task: Char): Int = task - 'A' + TIME_CONST + 1
 
 
   val data = List(
@@ -150,8 +139,6 @@ object Day7 {
     "Step B must be finished before step E can begin.",
     "Step D must be finished before step E can begin.",
     "Step F must be finished before step E can begin.")
-
-  // CABDFE
 
   def main(args: Array[String]): Unit = {
     val file = new File("data/day7.txt")
