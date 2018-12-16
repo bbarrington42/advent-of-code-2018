@@ -70,35 +70,39 @@ object Day7 {
 
   //// Specific to Part 2 /////////////
 
+  val NUM_ELVES = 4
+  val TIME_CONST = 60
+
+
   case class Elf(task: Option[Char] = None, timeRemaining: Int = 0) {
     def isAvail(): Boolean = timeRemaining <= 0
   }
 
-
-  val NUM_ELVES = 4
-  val TIME_CONST = 60
-
   def taskTime(task: Char): Int = task - 'A' + TIME_CONST + 1
 
+  // Execute each pending task. This adjusts the state of prerequisites and adds more pending tasks.
   def execute(reqs: Prerequisites, tasks: List[Char], pending: List[Char]): (List[Char], Prerequisites) = {
-    tasks.foldLeft((pending, reqs))((z, t) => {
-      val (newTasks, newReqs) = execute(z._2, t)
-      ((newTasks ++ z._1).sorted, newReqs)
+    val (t, r) = tasks.foldLeft((pending, reqs))({ case ((p, r), t) =>
+      val (newTasks, newReqs) = execute(r, t)
+      ((newTasks ++ p), newReqs)
     })
+    (t.sorted, r)
   }
 
-  def assignTasks(pending: List[Char], elves: List[Elf]): (List[Char], List[Elf]) = {
-    val (avail, busy) = elves.partition(_.isAvail())
-    val count = Math.min(pending.length, avail.length)
+  // Assign as many tasks as possible to the idle elves.
+  def assignTasks(tasks: List[Char], elves: List[Elf]): (List[Char], List[Elf]) = {
+    def loop(_tasks: List[Char], _elves: List[Elf], accElves: List[Elf]): (List[Char], List[Elf]) = (_tasks, _elves) match {
+      case (Nil, _) | (_, Nil) => (_tasks, _elves ++ accElves)
 
-    def loop(n: Int, tasks: List[Char], assigned: List[Elf]): (List[Char], List[Elf]) =
-      if (n == 0) (tasks, assigned ++ List.fill(avail.length - count)(Elf())) else
-        loop(n - 1, tasks.tail, Elf(Some(tasks.head), taskTime(tasks.head)) :: assigned)
+      case (th :: ttail, _ :: etail) =>
+        loop(ttail, etail, Elf(Some(th), taskTime(th)) :: accElves)
+    }
 
-    val (t, e) = loop(count, pending, Nil)
+    val (idle, busy) = elves.partition(_.isAvail())
 
-    (t, e ++ busy)
+    loop(tasks, idle, busy)
   }
+
 
   def decrementTime(elves: List[Elf]): List[Elf] = {
     val (idle, busy) = elves.partition(_.isAvail())
