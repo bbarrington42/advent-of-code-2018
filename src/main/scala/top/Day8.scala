@@ -48,16 +48,36 @@ object Day8 {
     root.metadata.sum + loop(root.children)
   }
 
-val input = List("2 3 0 3 10 11 12 1 1 0 1 99 2 1 1 2")
+
+  /////////// Part 2 ////////////
+
+  def solve2(node: Node): Int =
+    value(node.children, node.metadata)
+
+
+  def value(children: List[Node], indices: List[Int]): Int = {
+    println(s"children: $children, indices: $indices")
+    children match {
+      case Nil => indices.sum
+
+      case _ => indices.foldLeft(0)((z, i) =>
+        if (children.isDefinedAt(i - 1)) z + solve2(children(i - 1)) else z)
+    }
+  }
+
+
+  val input = List("2 3 0 3 10 11 12 1 1 0 1 99 2 1 1 2")
 
   def main(args: Array[String]): Unit = {
     val file = new File("data/day8.txt")
 
-    val data = //parse(input)
-      parse(file)
+    val data = parse(input)
+      //parse(file)
 
     val root = node(data)
 
     println(solve1(root._1))
+
+    println(solve2(root._1))
   }
 }
