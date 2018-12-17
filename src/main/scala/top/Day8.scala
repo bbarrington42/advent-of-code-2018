@@ -39,17 +39,25 @@ object Day8 {
   }
 
   def solve1(root: Node): Int = {
-    
+    def loop(children: List[Node]): Int = children match {
+      case Nil => 0
+
+      case head :: tail => tail.foldLeft(solve1(head))((z, n) => z + solve1(n))
+    }
+
+    root.metadata.sum + loop(root.children)
   }
 
+val input = List("2 3 0 3 10 11 12 1 1 0 1 99 2 1 1 2")
 
   def main(args: Array[String]): Unit = {
     val file = new File("data/day8.txt")
 
-    val data = parse(file)
+    val data = //parse(input)
+      parse(file)
 
     val root = node(data)
 
-    println(root)
+    println(solve1(root._1))
   }
 }
