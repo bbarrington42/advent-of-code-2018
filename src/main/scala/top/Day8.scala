@@ -6,9 +6,7 @@ import scala.io.Source
 
 object Day8 {
 
-  case class Node(name: Int, children: List[Node], metadata: List[Int]) {
-    override def toString: String = s"name: ${name.toChar}, children: $children, metadata: $metadata"
-  }
+  case class Node(children: List[Node], metadata: List[Int])
 
   def parse(lines: List[String]): List[Int] = lines match {
     case Nil => Nil
@@ -19,24 +17,25 @@ object Day8 {
   def parse(file: File): List[Int] =
     parse(Source.fromFile(file).getLines().toList)
 
-  def node(name: Int, data: List[Int]): (Node, List[Int]) = {
+  def node(data: List[Int]): (Node, List[Int]) = {
 
     val ccount = data.head
     val mcount = data.tail.head
 
-    val (c, r1) = children(name + 1, data.drop(2), Nil, ccount)
+    val (c, r1) = children(data.drop(2), Nil, ccount)
     val (m, r2) = metadata(r1, mcount)
-    (Node(name, c, m), r2)
+    (Node(c, m), r2)
   }
 
   def metadata(data: List[Int], count: Int): (List[Int], List[Int]) =
     data.splitAt(count)
 
 
-  def children(name: Int, data: List[Int], nodes: List[Node], count: Int): (List[Node], List[Int]) = {
+  def children(data: List[Int], nodes: List[Node], count: Int): (List[Node], List[Int]) = {
+    // Must reverse as order is important for Part 2.
     if (count == 0) (nodes.reverse, data) else {
-      val (n, d) = node(name, data)
-      children(name + 1, d, n :: nodes, count - 1)
+      val (n, d) = node(data)
+      children(d, n :: nodes, count - 1)
     }
   }
 
@@ -61,7 +60,6 @@ object Day8 {
 
     case _ => indices.foldLeft(0)((z, i) =>
       if (children.isDefinedAt(i - 1)) z + solve2(children(i - 1)) else z)
-
   }
 
 
@@ -73,10 +71,14 @@ object Day8 {
     val data = //parse(input)
     parse(file)
 
-    val root = node('A', data)
+    val root = node(data)
+    
+    val r1 = solve1(root._1)
 
-    println(solve1(root._1))
+    println(s"part 1: $r1")
 
-    println(solve2(root._1))
+    val r2 = solve2(root._1)
+
+    println(s"part 2: $r2")
   }
 }
