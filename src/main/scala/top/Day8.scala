@@ -14,8 +14,7 @@ object Day8 {
     case head :: tail => head.split(" ").map(_.toInt).toList ++ parse(tail)
   }
 
-  def parse(file: File): List[Int] =
-    parse(Source.fromFile(file).getLines().toList)
+  def parse(file: File): List[Int] = parse(Source.fromFile(file).getLines().toList)
 
   def node(data: List[Int]): (Node, List[Int]) = {
 
@@ -23,11 +22,10 @@ object Day8 {
 
     val (c, r1) = children(tail, Nil, ccount)
     val (m, r2) = metadata(r1, mcount)
-    (Node(c, m), r2)
+    Node(c, m) -> r2
   }
 
-  def metadata(data: List[Int], count: Int): (List[Int], List[Int]) =
-    data.splitAt(count)
+  def metadata(data: List[Int], count: Int): (List[Int], List[Int]) = data.splitAt(count)
 
 
   def children(data: List[Int], nodes: List[Node], count: Int): (List[Node], List[Int]) = {
@@ -38,27 +36,34 @@ object Day8 {
     }
   }
 
-  def solve1(root: Node): Int = {
-    def loop(children: List[Node]): Int = children match {
-      case Nil => 0
+  def solve1(input: (Node, List[Int])): Int = {
+    def value(root: Node): Int = {
+      def loop(children: List[Node]): Int = children match {
+        case Nil => 0
 
-      case head :: tail => tail.foldLeft(solve1(head))((z, n) => z + solve1(n))
+        case head :: tail => tail.foldLeft(value(head))((z, n) => z + value(n))
+      }
+
+      root.metadata.sum + loop(root.children)
     }
 
-    root.metadata.sum + loop(root.children)
+    value(input._1)
   }
 
 
   /////////// Part 2 ////////////
 
-  def solve2(node: Node): Int = value(node.children, node.metadata)
+  def solve2(input: (Node, List[Int])): Int = value(input._1)
 
 
-  def value(children: List[Node], indices: List[Int]): Int = children match {
-    case Nil => indices.sum
+  def value(node: Node): Int = value(node.children, node.metadata)
 
-    case _ => indices.foldLeft(0)((z, i) =>
-      if (children.isDefinedAt(i - 1)) z + solve2(children(i - 1)) else z)
+
+  def value(children: List[Node], refs: List[Int]): Int = children match {
+    case Nil => refs.sum
+
+    case _ => refs.foldLeft(0)((z, i) =>
+      if (children.isDefinedAt(i - 1)) z + value(children(i - 1)) else z)
   }
 
 
@@ -68,15 +73,15 @@ object Day8 {
     val file = new File("data/day8.txt")
 
     val data = //parse(input)
-    parse(file)
+      parse(file)
 
     val root = node(data)
 
-    val r1 = solve1(root._1)
+    val r1 = solve1(root)
 
     println(s"part 1: $r1")
 
-    val r2 = solve2(root._1)
+    val r2 = solve2(root)
 
     println(s"part 2: $r2")
   }
