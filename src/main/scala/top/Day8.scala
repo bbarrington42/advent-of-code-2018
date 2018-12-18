@@ -19,10 +19,9 @@ object Day8 {
 
   def node(data: List[Int]): (Node, List[Int]) = {
 
-    val ccount = data.head
-    val mcount = data.tail.head
+    val (ccount :: mcount :: tail) = data
 
-    val (c, r1) = children(data.drop(2), Nil, ccount)
+    val (c, r1) = children(tail, Nil, ccount)
     val (m, r2) = metadata(r1, mcount)
     (Node(c, m), r2)
   }
@@ -72,7 +71,7 @@ object Day8 {
     parse(file)
 
     val root = node(data)
-    
+
     val r1 = solve1(root._1)
 
     println(s"part 1: $r1")
