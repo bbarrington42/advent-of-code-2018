@@ -2,10 +2,10 @@ package top
 
 object Day9 {
 
-  case class MarbleCircle(pos: Int = 0, marbles: List[Int]) {
+  case class Circle(pos: Int = 0, marbles: List[Int]) {
 
     // Move current position CCW (-) or CW (+) by the specified amount. Return the updated buffer.
-    def rotate(delta: Int): MarbleCircle = {
+    def rotate(delta: Int): Circle = {
       //println(s"rotate: this: $this, delta: $delta")
       val len = marbles.length
       val p = ((pos + delta) % len + len) % len
@@ -17,7 +17,7 @@ object Day9 {
     // Rotate to the right by one and insert the item between the current element and the item immediately to the right
     // of the current position. The current position points to the new item.
     // If there is no element immediately to the right of the current position, grow the items by one.
-    def add(item: Int): MarbleCircle = {
+    def add(item: Int): Circle = {
       val buf = rotate(1)
       //println(s"buf: $buf")
       if (buf.marbles.length - buf.pos == 1)
@@ -28,32 +28,68 @@ object Day9 {
       }
     }
 
-    def remove(): MarbleCircle = {
+    def remove(): (Int, Circle) = {
       val (front, back) = marbles.splitAt(pos)
-      copy(marbles = front ++ back.tail)
+      (back.head, copy(marbles = front ++ back.tail))
     }
 
   }
 
+  def updateScores(player: Int, value: Int, scores: List[Int]): List[Int] = {
+    val (front, back) = scores.splitAt(player)
+    front ++ (back.head + value :: back.tail)
+  }
 
-  def play(marble: Int, circle: MarbleCircle): MarbleCircle =
-    circle.add(marble)
+  def nextPlayer(current: Int, scores: List[Int]): Int =
+    (current + 1) % scores.length
+
+  // One move by the designated player. Returns the updated scores and marble circle.
+  def move(player: Int, marble: Int, scores: List[Int], circle: Circle): (List[Int], Circle) = {
+    if (marble % 23 == 0) {
+      val (v, c) = circle.rotate(-7).remove()
+      // update this players score
+      (updateScores(player, marble + v, scores), c)
+    } else (scores, circle.add(marble))
+
+  }
 
 
-  def loop(count: Int, marble: Int, circle: MarbleCircle): List[MarbleCircle] =
-    if (count == 0) Nil else
-      circle :: loop(count - 1, marble + 1, play(marble, circle))
+  def solve1(player: Int, marbles: List[Int], scores: List[Int], circle: Circle): Int = marbles match {
+    case Nil => scores.max
+
+    case marble :: rest =>
+      val (s, c) = move(player, marble, scores, circle)
+      solve1(nextPlayer(player, scores), rest, s, c)
+  }
+
+  def initMarbles(last: Int, marble: Int, marbles: List[Int]): List[Int] = {
+    if (marble > last) marbles.reverse else
+      initMarbles(last, marble + 1, marble :: marbles)
+  }
 
 
   // 458 players; last marble is worth 71307 points
+  /*
+  10 players; last marble is worth 1618 points: high score is 8317
+  13 players; last marble is worth 7999 points: high score is 146373
+  17 players; last marble is worth 1104 points: high score is 2764
+  21 players; last marble is worth 6111 points: high score is 54718
+  30 players; last marble is worth 5807 points: high score is 37305
+   */
+
+  val NUM_PLAYERS = 458
+  val LAST_MARBLE = 71307
+
   def main(args: Array[String]): Unit = {
 
-    val init = MarbleCircle(0, List(0))
+    val scores = List.fill(NUM_PLAYERS)(0)
 
-    val r = loop(20, 1, init)
+    val marbles = initMarbles(LAST_MARBLE, 1, Nil)
 
-    println(r.length)
-    println(r)
+    val circle = Circle(0, List(0))
 
+    val r1 = solve1(0, marbles, scores, circle)
+
+    println(s"part 1: $r1")
   }
 }
