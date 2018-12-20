@@ -30,16 +30,14 @@ object Day9 {
   }
 
 
-  def updateScores(player: Int, value: Int, scores: List[Int]): List[Int] = {
-    val (front, back) = scores.splitAt(player)
-    front ++ (back.head + value :: back.tail)
-  }
+  def updateScores(player: Int, value: Int, scores: IndexedSeq[Int]): IndexedSeq[Int] =
+    scores.updated(player, scores(player) + value)
 
-  def nextPlayer(current: Int, scores: List[Int]): Int =
+  def nextPlayer(current: Int, scores: IndexedSeq[Int]): Int =
     (current + 1) % scores.length
 
   // One move by the designated player. Returns the updated scores and marble circle.
-  def move(player: Int, marble: Int, scores: List[Int], circle: Circle): (List[Int], Circle) = {
+  def move(player: Int, marble: Int, scores: IndexedSeq[Int], circle: Circle): (IndexedSeq[Int], Circle) = {
     if (marble % 23 == 0) {
       val (v, c) = remove(rotate(circle, -7))
       // update this players score
@@ -49,17 +47,16 @@ object Day9 {
   }
 
 
-  def solve1(player: Int, marbles: List[Int], scores: List[Int], circle: Circle): Int = marbles match {
-    case Nil => scores.max
-
-    case marble :: rest =>
-      val (s, c) = move(player, marble, scores, circle)
-      solve1(nextPlayer(player, scores), rest, s, c)
+  def solve1(player: Int, marbles: IndexedSeq[Int], scores: IndexedSeq[Int], circle: Circle): Int = {
+    if (marbles.isEmpty) scores.max else {
+      val (s, c) = move(player, marbles.head, scores, circle)
+      solve1(nextPlayer(player, scores), marbles.tail, s, c)
+    }
   }
 
-  def initMarbles(last: Int, marble: Int, marbles: List[Int]): List[Int] = {
-    if (marble > last) marbles.reverse else
-      initMarbles(last, marble + 1, marble :: marbles)
+  def initMarbles(last: Int, marble: Int, marbles: IndexedSeq[Int]): IndexedSeq[Int] = {
+    if (marble > last) marbles else
+      initMarbles(last, marble + 1, marbles :+ marble)
   }
 
 
@@ -77,9 +74,9 @@ object Day9 {
 
   def main(args: Array[String]): Unit = {
 
-    val scores = List.fill(NUM_PLAYERS)(0)
+    val scores = IndexedSeq.fill(NUM_PLAYERS)(0)
 
-    val marbles = initMarbles(LAST_MARBLE, 1, Nil)
+    val marbles = initMarbles(LAST_MARBLE, 1, IndexedSeq.empty)
 
     val circle = Circle(0, IndexedSeq(0))
 
