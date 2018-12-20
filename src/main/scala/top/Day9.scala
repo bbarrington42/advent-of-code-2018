@@ -2,38 +2,33 @@ package top
 
 object Day9 {
 
-  case class Circle(pos: Int = 0, marbles: List[Int]) {
+  case class Circle(pos: Int = 0, marbles: List[Int])
 
-    // Move current position CCW (-) or CW (+) by the specified amount. Return the updated buffer.
-    def rotate(delta: Int): Circle = {
-      //println(s"rotate: this: $this, delta: $delta")
-      val len = marbles.length
-      val p = ((pos + delta) % len + len) % len
-      //println(s"p: $p")
-      copy(pos = p)
-    }
-
-
-    // Rotate to the right by one and insert the item between the current element and the item immediately to the right
-    // of the current position. The current position points to the new item.
-    // If there is no element immediately to the right of the current position, grow the items by one.
-    def add(item: Int): Circle = {
-      val buf = rotate(1)
-      //println(s"buf: $buf")
-      if (buf.marbles.length - buf.pos == 1)
-        buf.copy(pos = buf.pos + 1, marbles = (item :: buf.marbles.reverse).reverse) else {
-        val (front, back) = buf.marbles.splitAt(buf.pos + 1)
-        //println(s"splitAt ${buf.pos + 1} ==> front: $front, back: $back")
-        buf.copy(pos = buf.pos + 1, marbles = front ++ (item :: back))
-      }
-    }
-
-    def remove(): (Int, Circle) = {
-      val (front, back) = marbles.splitAt(pos)
-      (back.head, copy(marbles = front ++ back.tail))
-    }
-
+  // Move current position CCW (-) or CW (+) by the specified amount. Return the updated buffer.
+  def rotate(circle: Circle, delta: Int): Circle = {
+    val len = circle.marbles.length
+    val p = ((circle.pos + delta) % len + len) % len
+    circle.copy(pos = p)
   }
+
+
+  // Rotate to the right by one and insert the item between the current element and the item immediately to the right
+  // of the current position. The current position points to the new item.
+  // If there is no element immediately to the right of the current position, grow the items by one.
+  def add(circle: Circle, item: Int): Circle = {
+    val c = rotate(circle, 1)
+    if (c.marbles.length - c.pos == 1)
+      c.copy(pos = c.pos + 1, marbles = (item :: c.marbles.reverse).reverse) else {
+      val (front, back) = c.marbles.splitAt(c.pos + 1)
+      c.copy(pos = c.pos + 1, marbles = front ++ (item :: back))
+    }
+  }
+
+  def remove(circle: Circle): (Int, Circle) = {
+    val (front, back) = circle.marbles.splitAt(circle.pos)
+    (back.head, circle.copy(marbles = front ++ back.tail))
+  }
+
 
   def updateScores(player: Int, value: Int, scores: List[Int]): List[Int] = {
     val (front, back) = scores.splitAt(player)
@@ -46,10 +41,10 @@ object Day9 {
   // One move by the designated player. Returns the updated scores and marble circle.
   def move(player: Int, marble: Int, scores: List[Int], circle: Circle): (List[Int], Circle) = {
     if (marble % 23 == 0) {
-      val (v, c) = circle.rotate(-7).remove()
+      val (v, c) = remove(rotate(circle, -7))
       // update this players score
       (updateScores(player, marble + v, scores), c)
-    } else (scores, circle.add(marble))
+    } else (scores, add(circle, marble))
 
   }
 
