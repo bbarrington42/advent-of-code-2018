@@ -2,7 +2,7 @@ package top
 
 object Day9 {
 
-  case class Circle(pos: Int = 0, marbles: List[Int])
+  case class Circle(pos: Int = 0, marbles: IndexedSeq[Int])
 
   // Move current position CCW (-) or CW (+) by the specified amount. Return the updated buffer.
   def rotate(circle: Circle, delta: Int): Circle = {
@@ -18,9 +18,9 @@ object Day9 {
   def add(circle: Circle, item: Int): Circle = {
     val c = rotate(circle, 1)
     if (c.marbles.length - c.pos == 1)
-      c.copy(pos = c.pos + 1, marbles = (item :: c.marbles.reverse).reverse) else {
+      c.copy(pos = c.pos + 1, marbles = c.marbles :+ item) else {
       val (front, back) = c.marbles.splitAt(c.pos + 1)
-      c.copy(pos = c.pos + 1, marbles = front ++ (item :: back))
+      c.copy(pos = c.pos + 1, marbles = front ++ (item +: back))
     }
   }
 
@@ -81,7 +81,7 @@ object Day9 {
 
     val marbles = initMarbles(LAST_MARBLE, 1, Nil)
 
-    val circle = Circle(0, List(0))
+    val circle = Circle(0, IndexedSeq(0))
 
     val r1 = solve1(0, marbles, scores, circle)
 
