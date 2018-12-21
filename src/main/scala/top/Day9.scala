@@ -1,5 +1,7 @@
 package top
 
+import java.util
+
 object Day9 {
 
   case class Circle(pos: Int = 0, marbles: IndexedSeq[Int])
@@ -54,9 +56,50 @@ object Day9 {
     }
   }
 
-  def initMarbles(last: Int, marble: Int, marbles: IndexedSeq[Int]): IndexedSeq[Int] = {
+  def initMarbles(last: Int, marble: Int, marbles: Array[Int]): Array[Int] = {
     if (marble > last) marbles else
       initMarbles(last, marble + 1, marbles :+ marble)
+  }
+
+
+  ///// Part 2 ////
+  // Use a Deque since technique in part 1 is too slow
+  // The current marble will always be at the head of the deque
+
+  def solve2(player: Int, marble: Int, scores: Array[Int], circle: util.ArrayDeque[Int]): Int = {
+    if (marble > LAST_MARBLE) scores.max else {
+      val (s, c) = move2(player, marble, scores, circle)
+      solve2((player + 1) % scores.length, marble + 1, s, c)
+    }
+  }
+
+  def move2(player: Int, marble: Int, scores: Array[Int], circle: util.ArrayDeque[Int]): (Array[Int], util.ArrayDeque[Int]) = {
+    if (marble % 10000 == 0) println(marble)
+    if (marble % 23 == 0) {
+      val c = rotate2(circle, -7)
+      val v = c.removeFirst()
+      (scores.updated(player, scores(player) + marble + v), c)
+    } else {
+      //println(s"before: $circle")
+      val c = rotate2(circle, 2)
+      //println(s"after: $c")
+      c.addFirst(marble)
+      (scores, c)
+    }
+  }
+
+  def rotate2(marbles: util.ArrayDeque[Int], by: Int): util.ArrayDeque[Int] = {
+    def loop(count: Int): util.ArrayDeque[Int] = {
+      if (count == 0) marbles else {
+        val first = marbles.removeFirst()
+        marbles.addLast(first)
+        loop(count - 1)
+      }
+    }
+
+    val len = marbles.size()
+    val pos = ((by % len) + len) % len
+    loop(pos)
   }
 
 
@@ -70,18 +113,27 @@ object Day9 {
    */
 
   val NUM_PLAYERS = 458
-  val LAST_MARBLE = 71307
+  val LAST_MARBLE = 7130700
 
   def main(args: Array[String]): Unit = {
 
-    val scores = IndexedSeq.fill(NUM_PLAYERS)(0)
+    val scores = Array.fill(NUM_PLAYERS)(0)
+    //val marbles = initMarbles(LAST_MARBLE, 1, Array.empty)
+    val circle = new util.ArrayDeque[Int]()
+    circle.addFirst(0)
+    val r2 = solve2(0, 1, scores, circle)
 
-    val marbles = initMarbles(LAST_MARBLE, 1, IndexedSeq.empty)
+    println(s"answer: $r2")
 
-    val circle = Circle(0, IndexedSeq(0))
-
-    val r1 = solve1(0, marbles, scores, circle)
-
-    println(s"part 1: $r1")
+    //
+    //    val scores = IndexedSeq.fill(NUM_PLAYERS)(0)
+    //
+    //    val marbles = initMarbles(LAST_MARBLE, 1, IndexedSeq.empty)
+    //
+    //    val circle = Circle(0, IndexedSeq(0))
+    //
+    //    val r1 = solve1(0, marbles, scores, circle)
+    //
+    //    println(s"part 1: $r1")
   }
 }
