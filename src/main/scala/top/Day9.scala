@@ -66,19 +66,19 @@ object Day9 {
   // Use a Deque since technique in part 1 is too slow
   // The current marble will always be at the head of the deque
 
-  def solve2(player: Int, marble: Int, scores: Array[Int], circle: util.ArrayDeque[Int]): Int = {
+  def solve2(player: Int, marble: Int, scores: Array[Long], circle: util.ArrayDeque[Int]): Long = {
     if (marble > LAST_MARBLE) scores.max else {
       val (s, c) = move2(player, marble, scores, circle)
       solve2((player + 1) % scores.length, marble + 1, s, c)
     }
   }
 
-  def move2(player: Int, marble: Int, scores: Array[Int], circle: util.ArrayDeque[Int]): (Array[Int], util.ArrayDeque[Int]) = {
+  def move2(player: Int, marble: Int, scores: Array[Long], circle: util.ArrayDeque[Int]): (Array[Long], util.ArrayDeque[Int]) = {
     if (marble % 10000 == 0) println(marble)
     if (marble % 23 == 0) {
       val c = rotate2(circle, -7)
       val v = c.removeFirst()
-      (scores.updated(player, scores(player) + marble + v), c)
+      (scores.updated(player, scores(player) + marble + v), truncate(c, 2000, 3000))
     } else {
       //println(s"before: $circle")
       val c = rotate2(circle, 2)
@@ -89,6 +89,30 @@ object Day9 {
   }
 
   def rotate2(marbles: util.ArrayDeque[Int], by: Int): util.ArrayDeque[Int] = {
+    val left: util.ArrayDeque[Int] => util.ArrayDeque[Int] = deque => {
+      val last = deque.removeLast()
+      deque.addFirst(last)
+      deque
+    }
+
+    val right: util.ArrayDeque[Int] => util.ArrayDeque[Int] = deque => {
+      val first = deque.removeFirst()
+      deque.addLast(first)
+      deque
+    }
+    def loop(count: Int, f: util.ArrayDeque[Int] => util.ArrayDeque[Int]): util.ArrayDeque[Int] = {
+      if(count==0) marbles else {
+        f(marbles)
+        loop(count-1, f)
+      }
+    }
+
+    val func = if(by < 0) left else right
+    loop(Math.abs(by), func)
+  }
+
+
+  def rotate3(marbles: util.ArrayDeque[Int], by: Int): util.ArrayDeque[Int] = {
     def loop(count: Int): util.ArrayDeque[Int] = {
       if (count == 0) marbles else {
         val first = marbles.removeFirst()
@@ -100,6 +124,21 @@ object Day9 {
     val len = marbles.size()
     val pos = ((by % len) + len) % len
     loop(pos)
+  }
+
+  def truncate(deque: util.ArrayDeque[Int], retain: Int, threshold: Int): util.ArrayDeque[Int] = deque
+
+  def truncate2(deque: util.ArrayDeque[Int], retain: Int, threshold: Int): util.ArrayDeque[Int] = {
+    def loop(count: Int): util.ArrayDeque[Int] = {
+      if (count == 0) deque else {
+        deque.removeLast()
+        loop(count - 1)
+      }
+    }
+
+    if (deque.size() > threshold) {
+      loop(deque.size() - retain)
+    } else deque
   }
 
 
@@ -117,7 +156,7 @@ object Day9 {
 
   def main(args: Array[String]): Unit = {
 
-    val scores = Array.fill(NUM_PLAYERS)(0)
+    val scores = Array.fill(NUM_PLAYERS)(0L)
     //val marbles = initMarbles(LAST_MARBLE, 1, Array.empty)
     val circle = new util.ArrayDeque[Int]()
     circle.addFirst(0)
