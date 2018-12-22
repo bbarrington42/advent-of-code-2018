@@ -118,7 +118,7 @@ object Day4 {
     val (guardId, (minute, value)) =
       history.toList.map { case (id, map) => id -> max(map) }.sortBy { case (_, (_, v)) => v }.reverse.head
 
-    println(s"guardId: $guardId, minute: $minute, solve2: $value")
+    println(s"guardId: $guardId, minute: $minute, solve: $value")
 
     guardId * minute
   }
