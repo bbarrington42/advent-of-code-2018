@@ -4,18 +4,44 @@ import java.util
 
 object Day9 {
 
+  def run1(): Long = {
+
+    val NUM_PLAYERS = 458
+    val LAST_MARBLE = 71307
+
+    val scores = Array.fill(NUM_PLAYERS)(0L)
+    val circle = new util.ArrayDeque[Int]()
+    circle.addFirst(0)
+    solve(0, 1, LAST_MARBLE, scores, circle)
+
+  }
+
+  def run2(): Long = {
+
+    val NUM_PLAYERS = 458
+    val LAST_MARBLE = 7130700
+
+    val scores = Array.fill(NUM_PLAYERS)(0L)
+    val circle = new util.ArrayDeque[Int]()
+    circle.addFirst(0)
+    solve(0, 1, LAST_MARBLE, scores, circle)
+
+  }
+
 
   // Use a Deque.
   // The current marble will always be at the head of the deque
 
-  def solve(player: Int, marble: Int, scores: Array[Long], circle: util.ArrayDeque[Int]): Long = {
-    if (marble > LAST_MARBLE) scores.max else {
+  def solve(player: Int, marble: Int, last_marble: Int, scores: Array[Long], circle: util.ArrayDeque[Int]): Long = {
+    if (marble > last_marble) scores.max else {
       val (s, c) = move(player, marble, scores, circle)
-      solve((player + 1) % scores.length, marble + 1, s, c)
+      solve((player + 1) % scores.length, marble + 1, last_marble, s, c)
     }
   }
 
-  def move(player: Int, marble: Int, scores: Array[Long], circle: util.ArrayDeque[Int]): (Array[Long], util.ArrayDeque[Int]) = {
+  def move(player: Int, marble: Int,
+           scores: Array[Long],
+           circle: util.ArrayDeque[Int]): (Array[Long], util.ArrayDeque[Int]) = {
     if (marble % 23 == 0) {
       val c = rotate(circle, -7)
       val v = c.removeFirst()
@@ -57,17 +83,11 @@ object Day9 {
   21 players; last marble is worth 6111 points: high score is 54718
   30 players; last marble is worth 5807 points: high score is 37305
    */
-
-  val NUM_PLAYERS = 458
-  val LAST_MARBLE = 7130700
-
   def main(args: Array[String]): Unit = {
+    val r1 = run1()
+    val r2 = run2()
 
-    val scores = Array.fill(NUM_PLAYERS)(0L)
-    val circle = new util.ArrayDeque[Int]()
-    circle.addFirst(0)
-    val r = solve(0, 1, scores, circle)
-
-    println(s"answer: $r")
+    println(s"part1: $r1")
+    println(s"part2: $r2")
   }
 }
