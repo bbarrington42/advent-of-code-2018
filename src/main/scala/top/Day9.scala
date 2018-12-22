@@ -43,23 +43,23 @@ object Day9 {
            scores: Array[Long],
            circle: util.ArrayDeque[Int]): (Array[Long], util.ArrayDeque[Int]) = {
     if (marble % 23 == 0) {
-      val c = rotate(circle, -7)
+      val c = rotate(circle, 7)
       val v = c.removeFirst()
       (scores.updated(player, scores(player) + marble + v), c)
     } else {
-      val c = rotate(circle, 2)
+      val c = rotate(circle, -2)
       c.addFirst(marble)
       (scores, c)
     }
   }
 
   def rotate(marbles: util.ArrayDeque[Int], by: Int): util.ArrayDeque[Int] = {
-    val left: util.ArrayDeque[Int] => Unit = deque => {
+    val cw: util.ArrayDeque[Int] => Unit = deque => {
       val last = deque.removeLast()
       deque.addFirst(last)
     }
 
-    val right: util.ArrayDeque[Int] => Unit = deque => {
+    val ccw: util.ArrayDeque[Int] => Unit = deque => {
       val first = deque.removeFirst()
       deque.addLast(first)
     }
@@ -71,7 +71,7 @@ object Day9 {
       }
     }
 
-    loop(Math.abs(by), if (by < 0) left else right)
+    loop(Math.abs(by), if (by < 0) ccw else cw)
   }
 
 
