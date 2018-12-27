@@ -9,7 +9,7 @@ object Day10 {
   val pointRegex =
     """position=<([^,]+),([^>]+)> velocity=<([^,]+),([^>]+)>""".r
 
-  case class Point(px: Int, py: Int, vx: Int, vy: Int)
+  case class Point(x: Int, y: Int, vx: Int, vy: Int)
 
   def parse(line: String): Point = line match {
     case pointRegex(px, py, vx, vy) => Point(px.trim.toInt, py.trim.toInt, vx.trim.toInt, vy.trim.toInt)
@@ -27,8 +27,8 @@ object Day10 {
     // Create an array first
     val array = Array.fill[Char](height, width)('.')
     val updated = points.foldLeft(array)((z, p) => {
-      if (p.px >= 0 && p.px < width && p.py >= 0 && p.py < height)
-        z.updated(p.py, z(p.py).updated(p.px, '#')) else z
+      if (p.x >= 0 && p.x < width && p.y >= 0 && p.y < height)
+        z.updated(p.y, z(p.y).updated(p.x, '#')) else z
     })
     show(updated)
   }
@@ -36,10 +36,31 @@ object Day10 {
   def show(display: Array[Array[Char]]): String =
     display.map(chars => chars.mkString).mkString("\n")
 
-  def tick(seconds: Int, points: List[Point]): List[Point] = {
-    points.map { case Point(px, py, vx, vy) => Point(px + vx * seconds, py + vy * seconds, vx, vy) }
-  }
+  def tick(points: List[Point], seconds: Long = 1): List[Point] =
+    points.map { case Point(px, py, vx, vy) => Point(px + vx * seconds.toInt, py + vy * seconds.toInt, vx, vy) }
 
+  def ticker(points: List[Point], display: Array[Array[Char]]): Unit = {
+    val width = display(0).length
+    val height = display.length
+
+    def loop(time: Int, points: List[Point]): Unit = {
+      // Check point coordinates
+      val found = points.find(p => Math.abs(p.x) < 50 || Math.abs(p.y) < 50)
+
+      // Calculate number of points within view 
+      val contained = points.foldLeft(0)((z, p) =>
+        if (p.x >= 0 && p.x < width && p.y >= 0 && p.y < height) z + 1 else z)
+      println(s"$time: $contained")
+      if (found.isEmpty)
+        loop(time + 1, tick(points))
+      else {
+        val s = view(101, 101, points)
+        println(s)
+      }
+    }
+
+    loop(0, points)
+  }
 
   val data = List(
     "position=< 9,  1> velocity=< 0,  2>",
@@ -78,8 +99,8 @@ object Day10 {
   def main(args: Array[String]): Unit = {
     val file = new File("data/day10.txt")
 
-    val width = 22
-    val height = 16
+    val width = 101
+    val height = 101
 
     val testPoints = List(
       Point(0, 0, 0, 0),
@@ -89,12 +110,33 @@ object Day10 {
 
 
     val ZERO_OFFSET = (width / 4, height / 4)
-    val points = parse(data).map { case Point(px, py, vx, vy) => Point(px + ZERO_OFFSET._1, py + ZERO_OFFSET._2, vx, vy) }
+    val points = parse(file).map { case Point(x, y, vx, vy) => Point(x + ZERO_OFFSET._1, y + ZERO_OFFSET._2, vx, vy) }
+
+    // Calculate x & y intercepts
+    val intercepts = points.map { case Point(x, y, vx, vy) => (-x / vx, -y / vy) }
+
+    // Find the least amount of time to intercept y-axis & x-axis
+    val zipped = points.zip(intercepts)
+
+    val tx = zipped.sortBy{case (p, z) => z._1}.head._2._1
+    val ty = zipped.sortBy{case (p, z) => z._2}.head._2._2
+
+    println(s"tx: $tx, ty: $ty")
+
+    val blart = tick(points, ty)
+
+    println(view(width, height, blart))
 
 
-    val display = view(width, height, tick(3, points))
+    //    val sorted = points.sortWith((l, r) => l.x + l.y > r.x + r.y)
+    //
+    //    println(sorted)
 
-    print(display)
+    //ticker(points, Array.fill(height, width)('.'))
+
+    //    val display = view(width, height, tick(points, 3))
+    //
+    //    print(display)
   }
 }
 
