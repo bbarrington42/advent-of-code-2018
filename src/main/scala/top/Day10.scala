@@ -2,7 +2,8 @@ package top
 
 import java.io.File
 
-import scala.io.Source
+import scala.io.{Source, StdIn}
+import scala.util.Random
 
 object Day10 {
   // position=< 21373,  53216> velocity=<-2, -5>,
@@ -11,56 +12,121 @@ object Day10 {
 
   case class Point(x: Int, y: Int, vx: Int, vy: Int)
 
-  def parse(line: String): Point = line match {
+  def xform(line: String): Point = line match {
     case pointRegex(px, py, vx, vy) => Point(px.trim.toInt, py.trim.toInt, vx.trim.toInt, vy.trim.toInt)
   }
-
-  def parse(lines: List[String]): List[Point] = lines.map(parse)
 
   def parse(file: File): List[Point] = {
     val lines = Source.fromFile(file).getLines().toList
     parse(lines)
   }
 
+  def parse(lines: List[String]): List[Point] =
+    lines.map(xform)
 
+  // Calculate the x & y intercepts for a Point.
+  // Values are returned in a tuple of tuples, i.e. ((time, x intercept), (time, y intercept))
+  def intercept(point: Point): ((Long, Int), (Long, Int)) = {
+    // Times
+    val xit = -point.y / point.vy
+    val yit = -point.x / point.vx
+    val xint = point.x + point.vx * xit
+    val yint = point.y + point.vy * yit
+    ((xit, xint), (yit, yint))
+  }
+
+  def intercepts(points: List[Point]): List[((Long, Int), (Long, Int))] =
+    points.map(intercept)
+
+  // return ((top, left), (bottom, right))
+  def boundingBox(intercepts: List[((Long, Int), (Long, Int))]): ((Int, Int), (Int, Int)) = {
+    val top = intercepts.minBy { case ((tx, x), (ty, y)) => y }._2._2
+    val left = intercepts.minBy { case ((tx, x), (ty, y)) => x }._1._2
+    val bottom = intercepts.maxBy { case ((tx, x), (ty, y)) => y }._2._2
+    val right = intercepts.maxBy { case ((tx, x), (ty, y)) => x }._1._2
+    ((top, left), (bottom, right))
+  }
+
+  // For a given set of points, create a view to show them
   def view(width: Int, height: Int, points: List[Point]): String = {
     // Create an array first
     val array = Array.fill[Char](height, width)('.')
-    val updated = points.foldLeft(array)((z, p) => {
+    // Translate the points to the center of the display
+    val OFFSET = (width / 4, height / 4)
+    // Update the visible points
+    val updated = points.map { case Point(x, y, vx, vy) => Point(x + OFFSET._1, y + OFFSET._2, vx, vy) }.foldLeft(array)((z, p) => {
       if (p.x >= 0 && p.x < width && p.y >= 0 && p.y < height)
         z.updated(p.y, z(p.y).updated(p.x, '#')) else z
     })
-    show(updated)
+    updated.map(chars => chars.mkString).mkString("\n")
   }
-
-  def show(display: Array[Array[Char]]): String =
-    display.map(chars => chars.mkString).mkString("\n")
 
   def tick(points: List[Point], seconds: Long = 1): List[Point] =
     points.map { case Point(px, py, vx, vy) => Point(px + vx * seconds.toInt, py + vy * seconds.toInt, vx, vy) }
 
-  def ticker(points: List[Point], display: Array[Array[Char]]): Unit = {
-    val width = display(0).length
-    val height = display.length
+  // Pick one point at random. Increment time and sum the distances to all other points.
+  // Continue until the value starts to increase. Use Manhattan distance
+  def magicTime(points: List[Point]): Int = {
+    def loop(time: Int, point: Point, points: List[Point], sum: Int): Int = {
+      val newSum = points.foldLeft(0)((z, p) => z + Math.abs(point.x - p.x) + Math.abs(point.y - p.y))
+      if (newSum > sum) time else
+        loop(time + 1, point, tick(points), newSum)
+    }
 
-    def loop(time: Int, points: List[Point]): Unit = {
-      // Check point coordinates
-      val found = points.find(p => Math.abs(p.x) < 50 || Math.abs(p.y) < 50)
+    val startPoint = points(Random.nextInt(points.length))
+    val startSum = points.foldLeft(0)((z, p) => z + Math.abs(startPoint.x - p.x) + Math.abs(startPoint.y - p.y))
+    loop(0, startPoint, points, startSum)
+  }
 
-      // Calculate number of points within view 
-      val contained = points.foldLeft(0)((z, p) =>
-        if (p.x >= 0 && p.x < width && p.y >= 0 && p.y < height) z + 1 else z)
-      println(s"$time: $contained")
-      if (found.isEmpty)
-        loop(time + 1, tick(points))
-      else {
-        val s = view(101, 101, points)
-        println(s)
+
+  // Enter loop to control display with keyboard
+  def keyLoop(width: Int, height: Int, points: List[Point]): Unit = {
+    def readChar(): Option[Char] = try {
+      Option(StdIn.readChar())
+    } catch {
+      case _: Throwable => None
+    }
+
+    def loop(points: List[Point]): Unit = {
+      println(s"----------------------------------------------------------------------------------")
+      println(view(width, height, points))
+
+      readChar() match {
+        case Some(k) => k match {
+          case 'z' => loop(tick(points, -1))
+          case 'x' => loop(tick(points, 1))
+          case 'q' | 'Q' =>
+
+          case _ => loop(points)
+        }
+
+        case None => loop(points)
       }
     }
 
-    loop(0, points)
+    loop(points)
   }
+
+  def timeLoop(initTime: Int, width: Int, height: Int, points: List[Point]): Unit = {
+
+    def getTime(): Int = StdIn.readInt()
+
+
+    def loop(time: Int): Unit = {
+      println(s"time: $time")
+      println(view(width, height, points.map { case Point(x, y, vx, vy) => Point(x + vx * time, y + vy * time, vx, vy) }))
+
+      loop(getTime())
+
+    }
+
+    loop(initTime)
+  }
+
+  // Calculate the time at which each point comes closest to the origin
+  def timeCalc(p: Point): Long =
+    (-p.x * p.vx - p.y * p.vy) / (p.vx * p.vx + p.vy * p.vy)
+
 
   val data = List(
     "position=< 9,  1> velocity=< 0,  2>",
@@ -99,44 +165,19 @@ object Day10 {
   def main(args: Array[String]): Unit = {
     val file = new File("data/day10.txt")
 
-    val width = 101
-    val height = 101
+    val width = 81
+    val height = 25
 
-    val testPoints = List(
-      Point(0, 0, 0, 0),
-      Point(width - 1, 0, 0, 0),
-      Point(width - 1, height - 1, 0, 0),
-      Point(0, height - 1, 0, 0))
+    val points = parse(file)
 
+    println(boundingBox(intercepts(points)))
 
-    val ZERO_OFFSET = (width / 4, height / 4)
-    val points = parse(file).map { case Point(x, y, vx, vy) => Point(x + ZERO_OFFSET._1, y + ZERO_OFFSET._2, vx, vy) }
-
-    // Calculate x & y intercepts
-    val intercepts = points.map { case Point(x, y, vx, vy) => (-x / vx, -y / vy) }
-
-    // Find the least amount of time to intercept y-axis & x-axis
-    val zipped = points.zip(intercepts)
-
-    val tx = zipped.sortBy{case (p, z) => z._1}.head._2._1
-    val ty = zipped.sortBy{case (p, z) => z._2}.head._2._2
-
-    println(s"tx: $tx, ty: $ty")
-
-    val blart = tick(points, ty)
-
-    println(view(width, height, blart))
-
-
-    //    val sorted = points.sortWith((l, r) => l.x + l.y > r.x + r.y)
+    //    val times = points.map(timeCalc).sorted
     //
-    //    println(sorted)
+    //    println(times.mkString("\n"))
 
-    //ticker(points, Array.fill(height, width)('.'))
+    //timeLoop(10300, width, height, points)
 
-    //    val display = view(width, height, tick(points, 3))
-    //
-    //    print(display)
   }
 }
 
