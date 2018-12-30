@@ -6,47 +6,73 @@ import scala.io.{Source, StdIn}
 
 object Day10 {
   // position=< 21373,  53216> velocity=<-2, -5>,
-  val pointRegex =
+  val regex =
     """position=<([^,]+),([^>]+)> velocity=<([^,]+),([^>]+)>""".r
 
-  case class Point(x: Long, y: Long, vx: Long, vy: Long)
+  case class Point(x: Int, y: Int)
 
-  case class Intercept(time: Long, coordinate: Long)
+  case class Velocity(vx: Int, vy: Int)
 
-  def xform(line: String): Point = line match {
-    case pointRegex(px, py, vx, vy) => Point(px.trim.toInt, py.trim.toInt, vx.trim.toInt, vy.trim.toInt)
+  case class BoundingBox(topLeft: Point, bottomRight: Point)
+
+  case class LightRay(point: Point, velocity: Velocity)
+
+  def xform(line: String): LightRay = line match {
+    case regex(x, y, vx, vy) =>
+      LightRay(Point(x.trim.toInt, y.trim.toInt), Velocity(vx.trim.toInt, vy.trim.toInt))
   }
 
-  def parse(file: File): List[Point] = {
+  def parse(file: File): List[LightRay] = {
     val lines = Source.fromFile(file).getLines().toList
     parse(lines)
   }
 
-  def parse(lines: List[String]): List[Point] =
-    lines.map(xform)
+  def parse(lines: List[String]): List[LightRay] = lines.map(xform)
 
+  // Returns topLeft, bottomRight
+  def boundingBox(points: List[Point]): BoundingBox = {
+    val top = points.minBy(_.y).y
+    val left = points.minBy(_.x).x
+    val bottom = points.maxBy(_.y).y
+    val right = points.maxBy(_.x).x
+    BoundingBox(Point(left, top), Point(right, bottom))
+  }
+
+  // returns (width, height)
+  def dimensions(boundingBox: BoundingBox): (Int, Int) =
+    (boundingBox.bottomRight.x - boundingBox.topLeft.x + 1, boundingBox.bottomRight.y - boundingBox.topLeft.y + 1)
+
+  // the offset needed to display topLeft at the origin of the view
+  def offset(boundingBox: BoundingBox): Point =
+    Point(-boundingBox.topLeft.x, -boundingBox.topLeft.y)
 
   // For a given set of points, create a view to show them
-  def view(width: Long, height: Long, points: List[Point]): String = {
-    // Create an array first
+  def view(rays: List[LightRay]): String = {
+    val points = rays.map { case LightRay(point, _) => point }
+    val box = boundingBox(points)
+    val (width, height) = dimensions(box)
+    // Create an array to hold all the points. Default char '.'
     val array = Array.fill[Char](height.toInt, width.toInt)('.')
     // Update the visible points
-    val updated = points.foldLeft(array)((z, p) =>
+    val os = offset(box)
+    val updated = points.map { case Point(x, y) => Point(x + os.x, y + os.y) }.foldLeft(array)((z, p) =>
       if (p.x >= 0 && p.x < width && p.y >= 0 && p.y < height)
-        z.updated(p.y.toInt, z(p.y.toInt).updated(p.x.toInt, '#')) else z
+        z.updated(p.y, z(p.y).updated(p.x, '#')) else z
     )
     updated.map(chars => chars.mkString).mkString("\n")
   }
 
-  def update(points: List[Point], seconds: Long): List[Point] =
-    points.map { case Point(px, py, vx, vy) => Point(px + vx * seconds.toLong, py + vy * seconds.toLong, vx, vy) }
+  def update(points: List[LightRay], seconds: Int): List[LightRay] =
+    points.map { case LightRay(Point(x, y), Velocity(vx, vy)) =>
+      LightRay(Point(x + vx * seconds, y + vy * seconds), Velocity(vx, vy))
+    }
 
   // Calculate the sum of the absolute values of each Point coordinate. Determine the time at which this is a minimum.
-  def magicTime(points: List[Point], initTime: Long): Long = {
-    def entropy(time: Long, points: List[Point]): Long =
-      update(points, time).foldLeft(0L)((z, p) => z + Math.abs(p.x) + Math.abs(p.y))
+  def magicTime(points: List[LightRay], initTime: Int): Int = {
+    def entropy(time: Int, points: List[LightRay]): Long =
+      update(points, time).foldLeft(0)((z, p) => z + Math.abs(p.point.x) + Math.abs(p.point.y))
 
-    def loop(time: Long, sum: Long = 0): Long = {
+    def loop(time: Int, sum: Long = 0): Int = {
       val newSum = entropy(time, points)
       if (newSum > sum) time else loop(time + 1, newSum)
     }
@@ -56,22 +82,25 @@ object Day10 {
 
 
   // Enter loop to control display with keyboard
-  def keyLoop(width: Long, height: Long, points: List[Point], initTime: Long): Unit = {
+  def keyLoop(points: List[LightRay], initTime: Int): Unit = {
     def readChar(): Option[Char] = try {
       Option(StdIn.readChar())
     } catch {
       case _: Throwable => None
     }
 
-    def loop(points: List[Point], time: Long): Unit = {
+    def loop(points: List[LightRay], time: Int): Unit = {
       println()
       println(s"time: $time")
-      println(view(width, height, update(points, time)))
+      println(view(update(points, time)))
 
       readChar() match {
         case Some(k) => k match {
-          case 'z' => loop(points, time - 1)
-          case 'x' => loop(points, time + 1)
+          // Backward
+          case 'b' => loop(points, time - 1)
+          // Forward
+          case 'f' => loop(points, time + 1)
+          // Quit
           case 'q' | 'Q' =>
 
           case _ => loop(points, time)
@@ -84,7 +113,7 @@ object Day10 {
     loop(points, initTime)
   }
 
-
+  // Test data
   val data = List(
     "position=< 9,  1> velocity=< 0,  2>",
     "position=< 7,  0> velocity=<-1,  0>",
@@ -118,7 +147,7 @@ object Day10 {
     "position=<14,  7> velocity=<-2,  0>",
     "position=<-3,  6> velocity=< 2, -1>")
 
-
+  // Answers
   // 10144
   // GGLZLHCE
 
@@ -128,24 +157,7 @@ object Day10 {
 
     val points = parse(file)
 
-    val time = magicTime(points, 0)
-
-    println(time)
-
-    val updated = update(points, time)
-
-    val top = updated.minBy(_.y).y
-    val bottom = updated.maxBy(_.y).y
-    val left = updated.minBy(_.x).x
-    val right = updated.maxBy(_.x).x
-
-    println(s"top: $top, left: $left, bottom: $bottom, right: $right")
-
-    val width = right - left
-    val height = bottom - top
-    println(s"width: $width, height: $height")
-
-    keyLoop(width, height, points, time)
+    keyLoop(points, magicTime(points, 0))
   }
 }
 
