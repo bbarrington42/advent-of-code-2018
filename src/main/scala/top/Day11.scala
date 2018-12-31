@@ -30,13 +30,14 @@ object Day11 {
   def grid(serial: Int, height: Int = 300, width: Int = 300): Grid =
     Array.tabulate(height, width)((y, x) => power(x + 1, y + 1, serial))
 
+  // Create the power square at the given position and dimension
   def powerCell(left: Int, top: Int, dim: Int, grid: Grid): PowerSquare = {
-    val right = left + dim - 1
-    val bottom = top + dim - 1
-    assert(right <= grid(0).length & bottom <= grid.length)
+    //    val right = left + dim - 1
+    //    val bottom = top + dim - 1
+    //    assert(right <= grid(0).length & bottom <= grid.length)
     val cells = for {
-      y <- top to bottom
-      x <- left to right
+      y <- top until top + dim
+      x <- left until left + dim
     } yield (x, y)
     val power = cells.foldLeft(0) { case (z, (_x, _y)) => z + grid(_y - 1)(_x - 1) }
     PowerSquare(left, top, dim, power)
@@ -52,6 +53,10 @@ object Day11 {
     sorted.headOption.map(c => Seq(c)).getOrElse(Seq.empty)
   }
 
+  def huh(): Seq[Int] = for {
+    x <- 1 until 0
+  } yield x
+
 
   def main(args: Array[String]): Unit = {
 
@@ -60,6 +65,8 @@ object Day11 {
     val list = powerCells(3, g)
 
     println(list.head)
+
+    println(huh)
 
 
     // Tests
