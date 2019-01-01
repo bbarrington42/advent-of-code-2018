@@ -46,16 +46,22 @@ object Day11 {
   // Create all power squares with the given dimension and return the one with the greatest power in a Seq
   def powerCells(dim: Int, grid: Grid): Seq[PowerSquare] = {
     val cells = for {
-      y <- 1 until grid.length - dim
-      x <- 1 until grid(0).length - dim
-    } yield powerCell(x, y, dim, grid)
+      y <- 0 until grid.length - dim
+      x <- 0 until grid(0).length - dim
+    } yield powerCell(x + 1, y + 1, dim, grid)
     val sorted = cells.sortWith((l, r) => r.power - l.power < 0)
     sorted.headOption.map(c => Seq(c)).getOrElse(Seq.empty)
   }
 
-  def huh(): Seq[Int] = for {
-    x <- 1 until 0
-  } yield x
+  def allDims(grid: Grid): PowerSquare = {
+    def loop(dim: Int, squares: Seq[PowerSquare]): PowerSquare = {
+      if (dim == 0) squares.sortWith((l, r) => r.power - l.power < 0).head else {
+        loop(dim - 1, powerCells(dim, grid) ++ squares)
+      }
+    }
+
+    loop(grid.length, Seq.empty)
+  }
 
 
   def main(args: Array[String]): Unit = {
@@ -66,7 +72,9 @@ object Day11 {
 
     println(list.head)
 
-    println(huh)
+    val square = allDims(g)
+
+    println(square)
 
 
     // Tests
