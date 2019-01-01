@@ -53,6 +53,7 @@ object Day11 {
     sorted.headOption.map(c => Seq(c)).getOrElse(Seq.empty)
   }
 
+  // This works, but is really slow....
   def allDims(grid: Grid): PowerSquare = {
     def loop(dim: Int, squares: Seq[PowerSquare]): PowerSquare = {
       if (dim == 0) squares.sortWith((l, r) => r.power - l.power < 0).head else {
