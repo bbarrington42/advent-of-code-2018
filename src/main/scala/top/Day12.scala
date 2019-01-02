@@ -12,59 +12,62 @@ object Day12 {
 
   case class Rule(pattern: String, result: Char)
 
+  case class State(zero: Int, plants: Array[Char])
+
   def toRule(line: String): Option[Rule] = line match {
     case ruleRegex(pattern, result) => Option(Rule(pattern, result.toCharArray()(0)))
     case _ => None
   }
 
-  def toState(line: String): Array[Char] = line match {
-    case stateRegex(state) => state.toCharArray
+  def toState(line: String): State = line match {
+    case stateRegex(plants) => State(0, plants.toCharArray)
     case _ => throw new Exception()
   }
 
-  def parse(lines: List[String]): (Array[Char], Seq[Rule]) = lines match {
+  def parse(lines: List[String]): (State, Seq[Rule]) = lines match {
     case head :: tail =>
       (toState(head), tail.map(toRule).filter(_.nonEmpty).map(_.get))
 
     case _ => throw new Exception()
   }
 
-  def parse(file: File): (Array[Char], Seq[Rule]) = {
+  def parse(file: File): (State, Seq[Rule]) = {
     val lines = Source.fromFile(file).getLines().toList
     parse(lines)
   }
 
-  // Extracts the String describing to plant being examined
-  def context(n: Int, state: Array[Char]): String =
-    state.slice(n - 2, n + 3).mkString
+  // Extracts the String describing the plant being examined
+  def context(n: Int, state: State): String =
+    state.plants.slice(n - 2, n + 3).mkString
 
 
   // The next state of the current plant
-  def nextState(n: Int, state: Array[Char], rules: Seq[Rule]): Char = {
+  def nextState(n: Int, state: State, rules: Seq[Rule]): Char = {
     val ctx = context(n, state)
     rules.find(rule => rule.pattern == ctx).get.result
   }
 
-  def nextGeneration(state: Array[Char], rules: Seq[Rule]): Array[Char] = {
-    def loop(n: Int, state: Array[Char]): Array[Char] = {
-      if (n > state.length - 3) state else
-        loop(n + 1, state.updated(n, nextState(n, state, rules)))
+  def nextGeneration(state: State, rules: Seq[Rule]): State = {
+    val empty = Array[Char]('.', '.')
+    val prev = State(state.zero + 2, empty ++ state.plants ++ empty)
+
+    def loop(n: Int, state: State): State = {
+      if (n > state.plants.length - 3) state else
+        loop(n + 1, state.copy(plants = state.plants.updated(n, nextState(n, prev, rules))))
     }
 
-    // Prepend and append 2 empty pots
-    val empties = Array('.', '.')
-    loop(2, empties ++ state ++ empties)
+    loop(2, prev)
   }
 
-  def part1(generations: Int, state: Array[Char], rules: Seq[Rule]): Int = {
-    def result(state: Array[Char]): Int = {
-      1
-    }
+  def part1(generations: Int, state: State, rules: Seq[Rule]): Int = {
+    def result(state: State): Int =
+      state.plants.foldLeft((0, 0))({ case ((i, r), c) => if (c == '#') (i + 1, r - state.zero + i) else (i + 1, r) })._2
 
-    def loop(gen: Int, state: Array[Char]): Int = {
-      if(gen == 0) result(state) else {
+
+    def loop(gen: Int, state: State): Int = {
+      if (gen == 0) result(state) else {
         val nextGen = nextGeneration(state, rules)
-        println(nextGen.mkString)
+        println(nextGen.plants.mkString)
         loop(gen - 1, nextGen)
       }
     }
@@ -79,5 +82,7 @@ object Day12 {
     val (state, rules) = parse(file)
 
     val r = part1(20, state, rules)
+
+    println(r)
   }
 }
