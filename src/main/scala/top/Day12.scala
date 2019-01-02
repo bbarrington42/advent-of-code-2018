@@ -12,7 +12,9 @@ object Day12 {
 
   case class Rule(pattern: String, result: Char)
 
-  case class State(zero: Int, plants: Array[Char])
+  case class State(zero: Int, plants: Array[Char]) {
+    override def toString(): String = s"State($zero, ${plants.mkString}"
+  }
 
   def toRule(line: String): Option[Rule] = line match {
     case ruleRegex(pattern, result) => Option(Rule(pattern, result.toCharArray()(0)))
@@ -44,7 +46,7 @@ object Day12 {
   // The next state of the current plant
   def nextState(n: Int, state: State, rules: Seq[Rule]): Char = {
     val ctx = context(n, state)
-    rules.find(rule => rule.pattern == ctx).get.result
+    rules.find(_.pattern == ctx).map(_.result).getOrElse('.')
   }
 
   def nextGeneration(state: State, rules: Seq[Rule]): State = {
