@@ -64,17 +64,16 @@ object Day12 {
   def part1(generations: Int, state: State, rules: Seq[Rule]): Int = {
     def result(state: State): Int =
       state.plants.foldLeft((0, 0))({ case ((i, r), c) => if (c == '#') {
-        println(s"r: $r, zero: ${state.zero}, i: $i")
+        //println(s"r: $r, zero: ${state.zero}, i: $i")
         (i + 1, r - state.zero + i)
       } else (i + 1, r) })._2
 
 
     def loop(gen: Int, state: State): Int = {
-      if (gen == 0) result(state) else {
-        val nextGen = nextGeneration(state, rules)
-        println(nextGen)
-        loop(gen - 1, nextGen)
-      }
+      println(s"${20-gen}: $state")
+      if (gen == 0) result(state) else
+        loop(gen - 1, nextGeneration(state, rules))
+
     }
 
     loop(generations, state)
