@@ -13,7 +13,7 @@ object Day12 {
   case class Rule(pattern: String, result: Char)
 
   case class State(zero: Int, plants: Array[Char]) {
-    override def toString(): String = s"State($zero, ${plants.mkString}"
+    override def toString(): String = f"State($zero%2d, ${plants.mkString}"
   }
 
   def toRule(line: String): Option[Rule] = line match {
@@ -61,24 +61,29 @@ object Day12 {
     loop(2, prev)
   }
 
-  def part1(generations: Int, state: State, rules: Seq[Rule]): Int = {
+  def part1(generations: Int, state: State, rules: Seq[Rule]): (List[State], Int) = {
     def result(state: State): Int =
       state.plants.foldLeft((0, 0))({ case ((i, r), c) => if (c == '#') {
         //println(s"r: $r, zero: ${state.zero}, i: $i")
         (i + 1, r - state.zero + i)
-      } else (i + 1, r) })._2
+      } else (i + 1, r)
+      })._2
 
 
-    def loop(gen: Int, state: State): Int = {
-      println(s"${20-gen}: $state")
-      if (gen == 0) result(state) else
-        loop(gen - 1, nextGeneration(state, rules))
+    def loop(gen: Int, states: List[State]): (List[State], Int) = {
+      if (gen == 0) (states, result(states.head)) else
+        loop(gen - 1, nextGeneration(states.head, rules) :: states)
 
     }
 
-    loop(generations, state)
+    loop(generations, List(state))
   }
 
+  def pad(len: Int)(state: State): State = {
+    val x = len - state.plants.length
+    val p = Array.fill(x/2)('.')
+    state.copy(plants = p ++ state.plants ++ p)
+  }
 
   def main(args: Array[String]): Unit = {
     val file = new File("data/day12.txt")
@@ -87,6 +92,11 @@ object Day12 {
 
     val r = part1(20, state, rules)
 
-    println(r)
+    // Pad shorter entries
+    val len = r._1.maxBy(_.plants.length).plants.length
+    val x = r._1.map(pad(len)).reverse
+
+    println(x.mkString("\n"))
+    println(r._2)
   }
 }
