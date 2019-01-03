@@ -50,12 +50,12 @@ object Day12 {
   }
 
   def nextGeneration(state: State, rules: Seq[Rule]): State = {
-    val empty = Array[Char]('.', '.')
+    val empty = Array.fill(2)('.')
     val prev = State(state.zero + 2, empty ++ state.plants ++ empty)
 
     def loop(n: Int, state: State): State = {
       if (n > state.plants.length - 3) state else
-        loop(n + 1, state.copy(plants = state.plants.updated(n, nextState(n, prev, rules))))
+        loop(n + 1, State(state.zero, state.plants.updated(n, nextState(n, prev, rules))))
     }
 
     loop(2, prev)
@@ -63,13 +63,16 @@ object Day12 {
 
   def part1(generations: Int, state: State, rules: Seq[Rule]): Int = {
     def result(state: State): Int =
-      state.plants.foldLeft((0, 0))({ case ((i, r), c) => if (c == '#') (i + 1, r - state.zero + i) else (i + 1, r) })._2
+      state.plants.foldLeft((0, 0))({ case ((i, r), c) => if (c == '#') {
+        println(s"r: $r, zero: ${state.zero}, i: $i")
+        (i + 1, r - state.zero + i)
+      } else (i + 1, r) })._2
 
 
     def loop(gen: Int, state: State): Int = {
       if (gen == 0) result(state) else {
         val nextGen = nextGeneration(state, rules)
-        println(nextGen.plants.mkString)
+        println(nextGen)
         loop(gen - 1, nextGen)
       }
     }
