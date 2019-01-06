@@ -37,15 +37,12 @@ object Day13 {
     def apply(location: Location): Char = grid(location.y)(location.x)
   }
 
-  def isCollision(carts: List[Cart]): Option[Location] = carts match {
-    case Nil => None
+  def isCollision(cart: Cart, carts: List[Cart]): Option[Location] =
+    carts.find(_.location == cart.location).map(_.location)
 
-    case head :: tail =>
-      tail.find(_.location == head.location).fold(isCollision(tail))(cart => Option(cart.location))
-  }
 
-  def getCarts(y: Int, line: Array[Char]): Array[Cart] =
-    line.zipWithIndex.foldLeft(Array.empty[Cart]) { case (z, (c, x)) => c match {
+  def getCarts(y: Int, line: Array[Char]): List[Cart] =
+    line.zipWithIndex.foldLeft(List.empty[Cart]) { case (z, (c, x)) => c match {
       case 'v' => z :+ Cart(Location(x, y), Down)
       case '^' => z :+ Cart(Location(x, y), Up)
       case '>' => z :+ Cart(Location(x, y), Right)
@@ -129,9 +126,6 @@ object Day13 {
     }
   }
 
-  def tick(carts: List[Cart], grid: Grid): List[Cart] =
-    sort(carts.map(cart => advance(cart, grid)))
-
 
   def parse(line: String): Array[Char] = line.toCharArray
 
@@ -145,12 +139,20 @@ object Day13 {
   }
 
   def part1(carts: List[Cart], grid: Grid): Location = {
-    val updated = tick(carts, grid)
-    isCollision(updated).fold(part1(updated, grid))(identity)
+    def loop(current: List[Cart], previous: List[Cart]): Location = previous match {
+      case Nil => loop(Nil, sort(current))
+
+      case head :: tail =>
+        val advanced = advance(head, grid)
+        val collision = isCollision(advanced, tail)
+        if(collision.isDefined) collision.get else loop(advanced :: current, tail)
+    }
+
+    loop(Nil, carts)
   }
 
   def main(args: Array[String]): Unit = {
-    val file = new File("data/day13-test.txt")
+    val file = new File("data/day13.txt")
 
     val grid = parse(file)
 
