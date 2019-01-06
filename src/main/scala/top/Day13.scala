@@ -44,7 +44,7 @@ object Day13 {
       tail.find(_.location == head.location).fold(isCollision(tail))(cart => Option(cart.location))
   }
 
-  def getCarts(y: Int, line: Array[Char]): Array[Cart] = {
+  def getCarts(y: Int, line: Array[Char]): Array[Cart] =
     line.zipWithIndex.foldLeft(Array.empty[Cart]) { case (z, (c, x)) => c match {
       case 'v' => z :+ Cart(Location(x, y), Down)
       case '^' => z :+ Cart(Location(x, y), Up)
@@ -54,12 +54,14 @@ object Day13 {
       case _ => z
     }
     }
-  }
+
+  def sort(carts: List[Cart]): List[Cart] =
+    carts.sortBy(cart => (cart.location.y, cart.location.x))
 
   def getCarts(grid: Grid): List[Cart] =
-    grid.zipWithIndex.foldLeft(List.empty[Cart]) { case (z, (l, y)) =>
+    sort(grid.zipWithIndex.foldLeft(List.empty[Cart]) { case (z, (l, y)) =>
       z ++ getCarts(y, l)
-    }.sortBy(cart => (cart.location.y, cart.location.x))
+    })
 
 
   def advance(cart: Cart, grid: Grid): Cart = {
@@ -127,6 +129,9 @@ object Day13 {
     }
   }
 
+  def tick(carts: List[Cart], grid: Grid): List[Cart] =
+    sort(carts.map(cart => advance(cart, grid)))
+
 
   def parse(line: String): Array[Char] = line.toCharArray
 
@@ -139,13 +144,21 @@ object Day13 {
     parse(lines)
   }
 
+  def part1(carts: List[Cart], grid: Grid): Location = {
+    val updated = tick(carts, grid)
+    isCollision(updated).fold(part1(updated, grid))(identity)
+  }
+
   def main(args: Array[String]): Unit = {
-    val file = new File("data/day13.txt")
+    val file = new File("data/day13-test.txt")
 
     val grid = parse(file)
 
-    val r = getCarts(grid)
+    val carts = getCarts(grid)
 
-    println(r.mkString)
+    val r = part1(carts, grid)
+
+    println(r)
+
   }
 }
