@@ -40,25 +40,26 @@ object Day13 {
   def isCollision(cart: Cart, carts: List[Cart]): Option[Location] =
     carts.find(_.location == cart.location).map(_.location)
 
-
-  def getCarts(y: Int, line: Array[Char]): List[Cart] =
-    line.zipWithIndex.foldLeft(List.empty[Cart]) { case (z, (c, x)) => c match {
-      case 'v' => z :+ Cart(Location(x, y), Down)
-      case '^' => z :+ Cart(Location(x, y), Up)
-      case '>' => z :+ Cart(Location(x, y), Right)
-      case '<' => z :+ Cart(Location(x, y), Left)
-
-      case _ => z
-    }
-    }
-
   def sort(carts: List[Cart]): List[Cart] =
     carts.sortBy(cart => (cart.location.y, cart.location.x))
 
-  def getCarts(grid: Grid): List[Cart] =
+  def getCarts(grid: Grid): List[Cart] = {
+
+    def getCarts(y: Int, line: Array[Char]): List[Cart] =
+      line.zipWithIndex.foldLeft(List.empty[Cart]) { case (z, (c, x)) => c match {
+        case 'v' => z :+ Cart(Location(x, y), Down)
+        case '^' => z :+ Cart(Location(x, y), Up)
+        case '>' => z :+ Cart(Location(x, y), Right)
+        case '<' => z :+ Cart(Location(x, y), Left)
+
+        case _ => z
+      }
+      }
+
     sort(grid.zipWithIndex.foldLeft(List.empty[Cart]) { case (z, (l, y)) =>
       z ++ getCarts(y, l)
     })
+  }
 
 
   def advance(cart: Cart, grid: Grid): Cart = {
@@ -145,7 +146,7 @@ object Day13 {
       case head :: tail =>
         val advanced = advance(head, grid)
         val collision = isCollision(advanced, tail)
-        if(collision.isDefined) collision.get else loop(advanced :: current, tail)
+        if (collision.isDefined) collision.get else loop(advanced :: current, tail)
     }
 
     loop(Nil, carts)
