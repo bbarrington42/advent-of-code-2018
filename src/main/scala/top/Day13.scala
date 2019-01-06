@@ -18,7 +18,6 @@ object Day13 {
   case object NoTurn extends Turn
 
 
-
   sealed trait Direction
 
   case object Left extends Direction
@@ -30,14 +29,37 @@ object Day13 {
   case object Down extends Direction
 
 
-
   case class Location(x: Int, y: Int)
 
-  case class Cart(location: Location, direction: Direction, lastTurn: Turn)
+  case class Cart(location: Location, direction: Direction, lastTurn: Turn = RightTurn)
 
   implicit class WrappedGrid(grid: Grid) {
     def apply(location: Location): Char = grid(location.y)(location.x)
   }
+
+  def isCollision(carts: List[Cart]): Option[Location] = carts match {
+    case Nil => None
+
+    case head :: tail =>
+      tail.find(_.location == head.location).fold(isCollision(tail))(cart => Option(cart.location))
+  }
+
+  def getCarts(y: Int, line: Array[Char]): Array[Cart] = {
+    line.zipWithIndex.foldLeft(Array.empty[Cart]) { case (z, (c, x)) => c match {
+      case 'v' => z :+ Cart(Location(x, y), Down)
+      case '^' => z :+ Cart(Location(x, y), Up)
+      case '>' => z :+ Cart(Location(x, y), Right)
+      case '<' => z :+ Cart(Location(x, y), Left)
+
+      case _ => z
+    }
+    }
+  }
+
+  def getCarts(grid: Grid): List[Cart] =
+    grid.zipWithIndex.foldLeft(List.empty[Cart]) { case (z, (l, y)) =>
+      z ++ getCarts(y, l)
+    }.sortBy(cart => (cart.location.y, cart.location.x))
 
 
   def advance(cart: Cart, grid: Grid): Cart = {
@@ -120,8 +142,10 @@ object Day13 {
   def main(args: Array[String]): Unit = {
     val file = new File("data/day13.txt")
 
-    val r = parse(file)
+    val grid = parse(file)
 
-    println(r.map(_.mkString).mkString("\n"))
+    val r = getCarts(grid)
+
+    println(r.mkString)
   }
 }
