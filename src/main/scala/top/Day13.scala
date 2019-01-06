@@ -2,6 +2,7 @@ package top
 
 import java.io.File
 
+import scala.annotation.tailrec
 import scala.io.Source
 
 object Day13 {
@@ -37,8 +38,8 @@ object Day13 {
     def apply(location: Location): Char = grid(location.y)(location.x)
   }
 
-  def isCollision(cart: Cart, carts: List[Cart]): Option[Location] =
-    carts.find(_.location == cart.location).map(_.location)
+  def isCollision(cart: Cart, carts: List[Cart]): Boolean =
+    carts.find(_.location == cart.location).isDefined
 
   def sort(carts: List[Cart]): List[Cart] =
     carts.sortBy(cart => (cart.location.y, cart.location.x))
@@ -56,19 +57,11 @@ object Day13 {
       }
       }
 
-    sort(grid.zipWithIndex.foldLeft(List.empty[Cart]) { case (z, (l, y)) =>
-      z ++ getCarts(y, l)
-    })
+    sort(grid.zipWithIndex.foldLeft(List.empty[Cart]) { case (z, (l, y)) => z ++ getCarts(y, l) })
   }
 
 
   def advance(cart: Cart, grid: Grid): Cart = {
-    val newLocation = cart.direction match {
-      case Up => cart.location.copy(y = cart.location.y - 1)
-      case Down => cart.location.copy(y = cart.location.y + 1)
-      case Right => cart.location.copy(x = cart.location.x + 1)
-      case Left => cart.location.copy(x = cart.location.x - 1)
-    }
 
     def turn(cart: Cart): Cart = {
       val turn = cart.lastTurn match {
@@ -98,6 +91,13 @@ object Day13 {
             case Down => updated.copy(direction = Left)
           }
       }
+    }
+
+    val newLocation = cart.direction match {
+      case Up => cart.location.copy(y = cart.location.y - 1)
+      case Down => cart.location.copy(y = cart.location.y + 1)
+      case Right => cart.location.copy(x = cart.location.x + 1)
+      case Left => cart.location.copy(x = cart.location.x - 1)
     }
 
     grid(newLocation) match {
@@ -140,13 +140,14 @@ object Day13 {
   }
 
   def part1(carts: List[Cart], grid: Grid): Location = {
+    @tailrec
     def loop(current: List[Cart], previous: List[Cart]): Location = previous match {
       case Nil => loop(Nil, sort(current))
 
       case head :: tail =>
         val advanced = advance(head, grid)
-        val collision = isCollision(advanced, tail)
-        if (collision.isDefined) collision.get else loop(advanced :: current, tail)
+        if (isCollision(advanced, tail)) advanced.location else
+          loop(advanced :: current, tail)
     }
 
     loop(Nil, carts)
