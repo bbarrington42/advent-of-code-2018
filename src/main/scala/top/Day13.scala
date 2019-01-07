@@ -153,14 +153,34 @@ object Day13 {
     loop(Nil, carts)
   }
 
+  def part2(carts: List[Cart], grid: Grid): Location = {
+    @tailrec
+    def loop(current: List[Cart], previous: List[Cart]): Location = previous match {
+      case Nil => loop(Nil, sort(current))
+
+      case head :: tail =>
+        val advanced = advance(head, grid)
+        if (tail.isEmpty) advanced.location else {
+          val idx = tail.indexWhere(_.location == advanced.location)
+          if (-1 != idx) {
+            val (front, back) = tail.splitAt(idx)
+            val curr = front ++ back.tail
+            loop(current, curr)
+          } else loop(advanced :: current, tail)
+        }
+    }
+
+    loop(Nil, carts)
+  }
+
   def main(args: Array[String]): Unit = {
-    val file = new File("data/day13.txt")
+    val file = new File("data/day13-test.txt")
 
     val grid = parse(file)
 
     val carts = getCarts(grid)
 
-    val r = part1(carts, grid)
+    val r = part2(carts, grid)
 
     println(r)
 
