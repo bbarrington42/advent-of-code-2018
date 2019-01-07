@@ -153,28 +153,35 @@ object Day13 {
     loop(Nil, carts)
   }
 
+  def removeAt[A](n: Int, list: List[A]): List[A] = {
+    val (f, b) = list.splitAt(n)
+    f ++ b.tail
+  }
+
   def part2(carts: List[Cart], grid: Grid): Location = {
     @tailrec
     def loop(current: List[Cart], previous: List[Cart]): Location = previous match {
       case Nil => loop(Nil, sort(current))
 
       case head :: tail =>
-        val advanced = advance(head, grid)
-        if (tail.isEmpty) advanced.location else {
-          val idx = tail.indexWhere(_.location == advanced.location)
-          if (-1 != idx) {
-            val (front, back) = tail.splitAt(idx)
-            val curr = front ++ back.tail
-            loop(current, curr)
-          } else loop(advanced :: current, tail)
+        if(current.isEmpty && tail.isEmpty) advance(head, grid).location else {
+          val advanced = advance(head, grid)
+          val n1 = current.indexWhere(_.location == advanced.location)
+          if(-1 != n1) loop(removeAt(n1, current), tail)
+          else {
+            val n2 = tail.indexWhere(_.location == advanced.location)
+            if(-1 != n2) loop(current, removeAt(n2, tail))
+            else loop(advanced :: current, tail)
+          }
         }
     }
 
     loop(Nil, carts)
   }
 
+
   def main(args: Array[String]): Unit = {
-    val file = new File("data/day13-test.txt")
+    val file = new File("data/day13.txt")
 
     val grid = parse(file)
 
