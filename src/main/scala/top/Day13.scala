@@ -164,8 +164,8 @@ object Day13 {
       case Nil => loop(Nil, sort(current))
 
       case head :: tail =>
-        if(current.isEmpty && tail.isEmpty) advance(head, grid).location else {
-          val advanced = advance(head, grid)
+        val advanced = advance(head, grid)
+        if(current.isEmpty && tail.isEmpty) advanced.location else {
           val n1 = current.indexWhere(_.location == advanced.location)
           if(-1 != n1) loop(removeAt(n1, current), tail)
           else {
