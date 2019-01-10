@@ -1,6 +1,6 @@
 package top
 
-import java.util.Deque
+import java.util.{ArrayDeque, Deque}
 
 import scala.collection.JavaConverters._
 
@@ -18,15 +18,30 @@ object Day14 {
       if (recipes.size == target + 10)
         lastN(10, recipes).mkString
       else {
-        val sum = recipes(elf1) + recipes(elf2)
-        val r = if (sum < 10) recipes :+ sum else recipes :+ sum / 10 :+ sum % 10
-        val e1 = (elf1 + recipes(elf1) + 1) % r.length
-        val e2 = (elf2 + recipes(elf2) + 1) % r.length
+        val x = recipes.toArray()(elf1)
+        val y = recipes.toArray()(elf2)
+
+        val sum = x.asInstanceOf[Int] + y.asInstanceOf[Int]
+        println(s"size: ${recipes.size}")
+        val r = if (sum < 10) {
+          recipes.addLast(sum)
+          recipes
+        } else {
+          recipes.addLast(sum / 10)
+          recipes.addLast(sum % 10)
+          recipes
+        }
+        val a = recipes.toArray()
+        val e1 = (elf1 + a(elf1).asInstanceOf[Int] + 1) % r.size
+        val e2 = (elf2 + a(elf2).asInstanceOf[Int] + 1) % r.size
         loop(r, e1, e2)
       }
     }
 
-    loop(Array(3, 7), 0, 1)
+    val d = new ArrayDeque[Int]()
+    d.addFirst(7)
+    d.addFirst(3)
+    loop(d, 0, 1)
   }
 
 
