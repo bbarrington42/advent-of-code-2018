@@ -23,9 +23,9 @@ object Day14 {
 
   def part2(target: String): Int = {
     def loop(n: Int, recipes: IndexedSeq[Int], elf1: Int, elf2: Int): Int = {
-      val x = recipes.takeRight(target.length).foldLeft(0)((z, i) => z * 10 + i).toString
-      println(x)
-      if (x == target) n - 1 else {
+      val x = recipes.takeRight(target.length).mkString
+      println(s"$n: ${recipes.mkString}, $x")
+      if (x == target) n + 1 else {
         val sum = recipes(elf1) + recipes(elf2)
 
         val r = if (sum < 10) recipes :+ sum else recipes :+ sum / 10 :+ sum % 10
@@ -36,12 +36,12 @@ object Day14 {
       }
     }
 
-    loop(1, IndexedSeq(3, 7), 0, 1)
+    loop(0, IndexedSeq(3, 7), 0, 1)
   }
 
 
   def main(args: Array[String]): Unit = {
-    val r = part2("01245")
+    val r = part2("290431")
 
     println(r)
   }
